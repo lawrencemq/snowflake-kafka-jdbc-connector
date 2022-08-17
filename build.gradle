@@ -1,0 +1,43 @@
+plugins {
+    id 'java'
+    id 'com.github.johnrengelman.shadow' version '7.1.2'
+}
+
+group 'lawrencemq'
+version '0.1.0'
+
+
+repositories {
+    mavenCentral()
+    maven {
+        url "https://packages.confluent.io/maven"
+    }
+}
+
+dependencies {
+    implementation "org.apache.kafka:kafka-clients:3.2.0"
+    implementation "org.apache.kafka:connect-api:3.2.0"
+    implementation 'io.confluent:kafka-connect-jdbc:10.4.0'
+    implementation 'net.snowflake:snowflake-jdbc:3.13.18'
+    implementation 'org.slf4j:slf4j-api:1.7.25'
+    implementation 'org.bouncycastle:bcprov-jdk15on:1.70'
+    implementation 'org.bouncycastle:bcpkix-jdk15on:1.70'
+    implementation 'com.google.code.gson:gson:2.8.5'
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.1'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.8.1'
+}
+
+test {
+    useJUnitPlatform()
+}
+
+shadowJar {
+    dependencies {
+        exclude dependency("org.apache.kafka:connect-api:3.0.0")
+        exclude dependency("org.apache.kafka:kafka-clients:3.0.0")
+        exclude dependency('io.confluent:kafka-connect-jdbc:10.4.0')
+        exclude dependency('net.jpountz.lz4:.*:.*')
+        exclude dependency('org.xerial.snappy:.*:.*')
+        exclude dependency('org.slf4j:.*:.*')
+    }
+}
