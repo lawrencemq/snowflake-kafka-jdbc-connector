@@ -9,18 +9,18 @@ import java.util.Map;
 
 public class SnowflakeSinkConnectorConfig extends AbstractConfig {
     private static final String SNOWFLAKE_CONNECTION_GROUP = "Snowflake Connection";
-    public static final String SNOWFLAKE_USER_NAME = "snowflake.user.name";
+    public static final String SNOWFLAKE_USER_NAME = "snowflake.username";
     public static final String SNOWFLAKE_ACCOUNT = "snowflake.account";
     public static final String SNOWFLAKE_WAREHOUSE = "snowflake.warehouse";
     public static final String SNOWFLAKE_ROLE = "snowflake.role";
-    public static final String SNOWFLAKE_DB = "snowflake.db";
+    public static final String SNOWFLAKE_DB = "snowflake.database";
     public static final String SNOWFLAKE_SCHEMA = "snowflake.schema";
     public static final String SNOWFLAKE_TABLE = "snowflake.table";
     public static final String SNOWFLAKE_PRIVATE_KEY_FILE = "snowflake.private.key.filename";
     public static final String SNOWFLAKE_PASSPHRASE = "snowflake.passphrase";
     public static final String SNOWFLAKE_MAX_RETRIES = "snowflake.max.retries";
-    public static final String SNOWFLAKE_BACKOFF_MS = "snowflake.retry.backoffMs";
-    public static final String SNOWFLAKE_RETRY_ATTEMPTS = "snowflake.retry.attempts";
+    public static final String SNOWFLAKE_RETRY_BACKOFF_MS = "snowflake.retry.backoffMs";
+//    public static final String SNOWFLAKE_RETRY_ATTEMPTS = "snowflake.retry.attempts";
     public static final String BATCH_SIZE = "batch.size";
     public static final String AUTO_CREATE = "auto.create";
     public static final String AUTO_EVOLVE = "auto.evolve";
@@ -112,15 +112,17 @@ public class SnowflakeSinkConnectorConfig extends AbstractConfig {
             )
             .define(SNOWFLAKE_MAX_RETRIES,
                     ConfigDef.Type.INT,
+                    3,
                     ConfigDef.Importance.LOW,
-                    "Maximum retries to connect to Snowflake",
+                    "Maximum number of times the connector will attempt to connect to Snowflake before failing.",
                     SNOWFLAKE_CONNECTION_GROUP,
                     10,
                     ConfigDef.Width.SHORT,
-                    "JDBC maximum reconnect retries"
+                    "Snowflake maximum reconnect retries"
             )
-            .define(SNOWFLAKE_BACKOFF_MS,
+            .define(SNOWFLAKE_RETRY_BACKOFF_MS,
                     ConfigDef.Type.LONG,
+                    5_000,
                     ConfigDef.Importance.LOW,
                     "The time in milliseconds to wait following an error before a retry attempt is made.",
                     SNOWFLAKE_CONNECTION_GROUP,
@@ -128,18 +130,18 @@ public class SnowflakeSinkConnectorConfig extends AbstractConfig {
                     ConfigDef.Width.SHORT,
                     "JDBC Backoff milliseconds"
             )
-            .define(
-                    SNOWFLAKE_RETRY_ATTEMPTS,
-                    ConfigDef.Type.INT,
-                    3,
-                    ConfigDef.Range.atLeast(1),
-                    ConfigDef.Importance.LOW,
-                    "The number of times the connector will attempt to connect to Snowflake before failing.",
-                    SNOWFLAKE_CONNECTION_GROUP,
-                    12,
-                    ConfigDef.Width.SHORT,
-                    "Snowflake connection retry attempts"
-            )
+//            .define(
+//                    SNOWFLAKE_RETRY_ATTEMPTS,
+//                    ConfigDef.Type.INT,
+//                    3,
+//                    ConfigDef.Range.atLeast(1),
+//                    ConfigDef.Importance.LOW,
+//                    "The number of times the connector will attempt to connect to Snowflake before failing.",
+//                    SNOWFLAKE_CONNECTION_GROUP,
+//                    12,
+//                    ConfigDef.Width.SHORT,
+//                    "Snowflake connection retry attempts"
+//            )
             .define(
                     BATCH_SIZE,
                     ConfigDef.Type.INT,
@@ -186,7 +188,7 @@ public class SnowflakeSinkConnectorConfig extends AbstractConfig {
     public final Password passphrase;
     public final int maxRetries;
     public final long retryBackoffMs;
-    public final int connectionAttempts;
+//    public final int connectionAttempts;
     public final int batchSize;
     public final boolean autoCreate;
     public final boolean autoEvolve;
@@ -205,8 +207,8 @@ public class SnowflakeSinkConnectorConfig extends AbstractConfig {
         this.privateKeyFile = this.getString(SNOWFLAKE_PRIVATE_KEY_FILE);
         this.passphrase = this.getPassword(SNOWFLAKE_PASSPHRASE);
         this.maxRetries = this.getInt(SNOWFLAKE_MAX_RETRIES);
-        this.retryBackoffMs = this.getLong(SNOWFLAKE_BACKOFF_MS);
-        this.connectionAttempts = this.getInt(SNOWFLAKE_RETRY_ATTEMPTS);
+        this.retryBackoffMs = this.getLong(SNOWFLAKE_RETRY_BACKOFF_MS);
+//        this.connectionAttempts = this.getInt(SNOWFLAKE_RETRY_ATTEMPTS);
         this.batchSize = this.getInt(BATCH_SIZE);
         this.autoCreate = this.getBoolean(AUTO_CREATE);
         this.autoEvolve = this.getBoolean(AUTO_EVOLVE);
