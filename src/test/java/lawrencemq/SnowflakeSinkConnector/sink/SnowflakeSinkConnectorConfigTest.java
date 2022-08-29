@@ -132,8 +132,8 @@ class SnowflakeSinkConnectorConfigTest {
         assertEquals(config.maxRetries, 3);
         assertEquals(config.retryBackoffMs, 5_000);
         assertEquals(config.batchSize, 3_000);
-        assertEquals(config.autoCreate, false);
-        assertEquals(config.autoEvolve, false);
+        assertEquals(config.autoCreate, true);
+        assertEquals(config.autoEvolve, true);
 
     }
 

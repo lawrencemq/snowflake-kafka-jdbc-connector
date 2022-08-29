@@ -20,12 +20,10 @@ public class SnowflakeSinkConnectorConfig extends AbstractConfig {
     public static final String SNOWFLAKE_PASSPHRASE = "snowflake.passphrase";
     public static final String SNOWFLAKE_MAX_RETRIES = "snowflake.max.retries";
     public static final String SNOWFLAKE_RETRY_BACKOFF_MS = "snowflake.retry.backoffMs";
-//    public static final String SNOWFLAKE_RETRY_ATTEMPTS = "snowflake.retry.attempts";
+    //    public static final String SNOWFLAKE_RETRY_ATTEMPTS = "snowflake.retry.attempts";
     public static final String BATCH_SIZE = "batch.size";
     public static final String AUTO_CREATE = "auto.create";
     public static final String AUTO_EVOLVE = "auto.evolve";
-
-    // TODO ADD PARAMETER TO INCLUDE KAFKA METADATA - TOPIC, PARTITION, OFFSET, ETC.
 
     public static final ConfigDef CONFIG_DEF = new ConfigDef()
             .define(SNOWFLAKE_USER_NAME,
@@ -156,7 +154,7 @@ public class SnowflakeSinkConnectorConfig extends AbstractConfig {
             .define(
                     AUTO_CREATE,
                     ConfigDef.Type.BOOLEAN,
-                    false,
+                    true,
                     ConfigDef.Importance.LOW,
                     "Whether to automatically create the destination table based on record schema if it is found to be missing by issuing ``CREATE``.",
                     SNOWFLAKE_CONNECTION_GROUP,
@@ -167,7 +165,7 @@ public class SnowflakeSinkConnectorConfig extends AbstractConfig {
             .define(
                     AUTO_EVOLVE,
                     ConfigDef.Type.BOOLEAN,
-                    false,
+                    true,
                     ConfigDef.Importance.LOW,
                     "Whether to automatically add columns in the table schema when found to be missing relative to the record schema by issuing ``ALTER``.",
                     SNOWFLAKE_CONNECTION_GROUP,
@@ -188,7 +186,7 @@ public class SnowflakeSinkConnectorConfig extends AbstractConfig {
     public final Password passphrase;
     public final int maxRetries;
     public final long retryBackoffMs;
-//    public final int connectionAttempts;
+    //    public final int connectionAttempts;
     public final int batchSize;
     public final boolean autoCreate;
     public final boolean autoEvolve;
@@ -208,7 +206,6 @@ public class SnowflakeSinkConnectorConfig extends AbstractConfig {
         this.passphrase = this.getPassword(SNOWFLAKE_PASSPHRASE);
         this.maxRetries = this.getInt(SNOWFLAKE_MAX_RETRIES);
         this.retryBackoffMs = this.getLong(SNOWFLAKE_RETRY_BACKOFF_MS);
-//        this.connectionAttempts = this.getInt(SNOWFLAKE_RETRY_ATTEMPTS);
         this.batchSize = this.getInt(BATCH_SIZE);
         this.autoCreate = this.getBoolean(AUTO_CREATE);
         this.autoEvolve = this.getBoolean(AUTO_EVOLVE);
