@@ -1,11 +1,12 @@
-package lawrencemq.SnowflakeSinkConnector.sink;
+package lawrencemq.SnowflakeSinkConnector.sql;
 
 import org.junit.jupiter.api.Test;
 
-import static lawrencemq.SnowflakeSinkConnector.sink.Utils.bytesToHex;
-import static org.junit.jupiter.api.Assertions.*;
+import static lawrencemq.SnowflakeSinkConnector.sql.QueryUtils.bytesToHex;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-class UtilsTest {
+
+class QueryUtilsTest {
 
     @Test
     void testBytesToHex() {
