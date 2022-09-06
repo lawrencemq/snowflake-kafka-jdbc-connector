@@ -10,7 +10,7 @@ public class Utils {
 
     private static final Logger log = LoggerFactory.getLogger(Utils.class);
 
-    static String getVersion(){
+    public static String getVersion(){
         String path = "/snowflake-kafka-jdbc-connector.properties";
         String defaultVersion = "unknown";
         try (InputStream stream = Utils.class.getResourceAsStream(path)) {
