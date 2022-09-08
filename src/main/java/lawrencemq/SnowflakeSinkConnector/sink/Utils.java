@@ -6,7 +6,7 @@ import org.slf4j.LoggerFactory;
 import java.io.InputStream;
 import java.util.Properties;
 
-public class Utils {
+public final class Utils {
 
     private static final Logger log = LoggerFactory.getLogger(Utils.class);
 

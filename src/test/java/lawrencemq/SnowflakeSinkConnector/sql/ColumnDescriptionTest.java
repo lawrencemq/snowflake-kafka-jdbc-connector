@@ -26,6 +26,6 @@ class ColumnDescriptionTest {
     void testToString() {
 
         ColumnDescription cd = new ColumnDescription("testName", 1, "BOOLEAN", false);
-        assertEquals(cd.toString(), "ColumnDescription[columnName=testName,typeName=BOOLEAN,sqlType=1,nullable=false]");
+        assertEquals(cd.toString(), "ColumnDescription{columnName=testName,typeName=BOOLEAN,sqlType=1,nullable=false}");
     }
 }

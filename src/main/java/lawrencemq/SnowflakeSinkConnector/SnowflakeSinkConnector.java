@@ -4,16 +4,13 @@ import lawrencemq.SnowflakeSinkConnector.sink.SnowflakeSinkConnectorConfig;
 import lawrencemq.SnowflakeSinkConnector.sink.SnowflakeSinkTask;
 import org.apache.kafka.common.config.Config;
 import org.apache.kafka.common.config.ConfigDef;
-import org.apache.kafka.common.config.ConfigValue;
 import org.apache.kafka.connect.connector.Task;
 import org.apache.kafka.connect.sink.SinkConnector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -51,6 +48,13 @@ public class SnowflakeSinkConnector extends SinkConnector {
     @Override
     public Config validate(Map<String, String> connectorConfigs) {
         Config config = super.validate(connectorConfigs);
+
+        // TODO NEED TO CHECK THAT USERNAME+PASS OR USERNAME + PRIVATE KEY (AND MAYBE PRIVATE PASS) ARE GIVEN. OTHERWISE ERROR
+        // https://docs.snowflake.com/en/user-guide/jdbc-configure.html
+
+        // todo add in optional parameters to the config, check that they're fine
+
+
         return config;
     }
 

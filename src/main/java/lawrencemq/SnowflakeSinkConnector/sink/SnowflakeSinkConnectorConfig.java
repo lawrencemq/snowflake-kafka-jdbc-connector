@@ -128,18 +128,6 @@ public class SnowflakeSinkConnectorConfig extends AbstractConfig {
                     ConfigDef.Width.SHORT,
                     "JDBC Backoff milliseconds"
             )
-//            .define(
-//                    SNOWFLAKE_RETRY_ATTEMPTS,
-//                    ConfigDef.Type.INT,
-//                    3,
-//                    ConfigDef.Range.atLeast(1),
-//                    ConfigDef.Importance.LOW,
-//                    "The number of times the connector will attempt to connect to Snowflake before failing.",
-//                    SNOWFLAKE_CONNECTION_GROUP,
-//                    12,
-//                    ConfigDef.Width.SHORT,
-//                    "Snowflake connection retry attempts"
-//            )
             .define(
                     BATCH_SIZE,
                     ConfigDef.Type.INT,
@@ -186,7 +174,6 @@ public class SnowflakeSinkConnectorConfig extends AbstractConfig {
     public final Password passphrase;
     public final int maxRetries;
     public final long retryBackoffMs;
-    //    public final int connectionAttempts;
     public final int batchSize;
     public final boolean autoCreate;
     public final boolean autoEvolve;

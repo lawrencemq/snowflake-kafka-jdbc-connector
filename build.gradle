@@ -20,14 +20,12 @@ repositories {
 dependencies {
     implementation "org.apache.kafka:kafka-clients:3.2.1"
     implementation "org.apache.kafka:connect-api:3.2.1"
-//    implementation 'io.confluent:kafka-connect-jdbc:10.4.0'
     implementation 'net.snowflake:snowflake-jdbc:3.13.21'
     implementation 'org.slf4j:slf4j-api:1.7.36'
     implementation 'org.bouncycastle:bcprov-jdk15on:1.70'
     implementation 'org.bouncycastle:bcpkix-jdk15on:1.70'
     implementation 'com.google.code.gson:gson:2.9.0'
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.9.0'
-//    compileTestJava 'org.junit.jupiter:junit-jupiter-api:5.9.0'
     testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.9.0'
 }
 
@@ -40,7 +38,6 @@ shadowJar {
     dependencies {
         exclude dependency("org.apache.kafka:connect-api:3.2.1")
         exclude dependency("org.apache.kafka:kafka-clients:3.2.1")
-//        exclude dependency('io.confluent:kafka-connect-jdbc:10.4.0')
         exclude dependency('net.jpountz.lz4:.*:.*')
         exclude dependency('org.xerial.snappy:.*:.*')
         exclude dependency('org.slf4j:.*:.*')

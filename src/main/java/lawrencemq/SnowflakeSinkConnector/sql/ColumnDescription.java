@@ -53,7 +53,7 @@ public final class ColumnDescription {
 
     @Override
     public String toString() {
-        return String.format("ColumnDescription[columnName=%s,typeName=%s,sqlType=%d,nullable=%s]",
+        return String.format("ColumnDescription{columnName=%s,typeName=%s,sqlType=%d,nullable=%s}",
                 columnName, typeName, sqlType, nullable);
     }
 
