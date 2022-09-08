@@ -11,6 +11,7 @@ import java.math.BigDecimal;
 import java.nio.ByteBuffer;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.util.Objects;
 
 import static lawrencemq.SnowflakeSinkConnector.sql.ConverterUtils.convertToJSON;
 
@@ -60,8 +61,10 @@ final class AvroSnowflakeConverter {
 
     }
 
-    static void formatColumnValue(QueryBuilder builder, String schemaName, Schema.Type type, Object value) {
-        if (schemaName != null) {
+    static void formatColumnValue(QueryBuilder builder, Schema schema, Object value) {
+        String schemaName = schema.name();
+
+        if (Objects.nonNull(schemaName)) {
             switch (schemaName) {
                 case Decimal.LOGICAL_NAME:
                     builder.append(value);
@@ -82,22 +85,26 @@ final class AvroSnowflakeConverter {
                     break;
             }
         }
-        switch (type) {
+        switch (schema.type()) {
             case INT8:
             case INT16:
             case INT32:
             case INT64:
             case FLOAT32:
             case FLOAT64:
+                builder.append(value);
+                return;
             case ARRAY:
             case MAP:
             case STRUCT:
-                // no escaping required
-                builder.append(value);
+                builder.append(convertToJSON(value));
+                return;
             case BOOLEAN:
                 builder.append((Boolean) value ? '1' : '0');
+                return;
             case STRING:
                 builder.appendStringQuoted(value);
+                return;
             case BYTES: {
                 final byte[] bytes;
                 if (value instanceof ByteBuffer) {
@@ -108,9 +115,10 @@ final class AvroSnowflakeConverter {
                     bytes = (byte[]) value;
                 }
                 builder.appendBinary(bytes);
+                return;
             }
             default:
-                throw new ConnectException("Unsupported type: " + type);
+                throw new ConnectException("Unsupported type: " + schema.type());
         }
     }
 
