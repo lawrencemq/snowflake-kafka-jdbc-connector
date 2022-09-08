@@ -6,9 +6,9 @@ public final class Table {
     private final String tableName;
 
     public Table(String databaseName, String schemaName, String tableName) {
-        this.databaseName = databaseName;
-        this.schemaName = schemaName;
-        this.tableName = tableName;
+        this.databaseName = databaseName.toUpperCase();
+        this.schemaName = schemaName.toUpperCase();
+        this.tableName = tableName.toUpperCase();
     }
 
     public String getDatabaseName() {

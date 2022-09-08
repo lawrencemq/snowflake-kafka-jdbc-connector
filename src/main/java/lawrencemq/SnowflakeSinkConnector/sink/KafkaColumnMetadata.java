@@ -8,7 +8,7 @@ public final class KafkaColumnMetadata {
     private final String columnName;
     private final Schema kafkaSchema;
 
-    KafkaColumnMetadata(String columnName, Schema kafkaSchema) {
+    public KafkaColumnMetadata(String columnName, Schema kafkaSchema) {
         this.columnName = columnName;
         this.kafkaSchema = kafkaSchema;
     }

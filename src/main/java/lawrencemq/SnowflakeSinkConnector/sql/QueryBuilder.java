@@ -4,9 +4,8 @@ package lawrencemq.SnowflakeSinkConnector.sql;
 import lawrencemq.SnowflakeSinkConnector.sink.KafkaColumnMetadata;
 import org.apache.kafka.connect.data.Schema;
 
-import javax.management.Query;
 import java.util.Collection;
-import java.util.Map;
+import java.util.Objects;
 
 import static java.util.Objects.nonNull;
 import static lawrencemq.SnowflakeSinkConnector.sql.AvroSnowflakeConverter.formatColumnValue;
@@ -45,7 +44,7 @@ final class QueryBuilder {
                 .append(" ")
                 .append(sqlType);
 
-        if (f.defaultValue() != null) {
+        if (Objects.nonNull(f.defaultValue())) {
             append(" DEFAULT ");
             formatColumnValue(
                     this,
@@ -118,15 +117,6 @@ final class QueryBuilder {
     public QueryBuilder append(Object obj) {
         if (nonNull(obj)) {
             sb.append(obj);
-        }
-        return this;
-    }
-
-    public <K,V> QueryBuilder appendMap(Map<K,V> map){
-        if(nonNull(map)){
-
-
-
         }
         return this;
     }
