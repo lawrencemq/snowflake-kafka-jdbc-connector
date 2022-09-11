@@ -10,6 +10,7 @@ import org.apache.kafka.connect.sink.SinkRecord;
 
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.util.Objects;
 
 
 public final class QueryStatementBinder {
@@ -26,14 +27,12 @@ public final class QueryStatementBinder {
     }
 
     private static void bindField(PreparedStatement statement, int index, Schema schema, Object value) throws SQLException {
-        if (value == null) {
+        if (Objects.isNull(value)) {
             statement.setObject(index, null);
-        } else {
-            boolean bound = AvroSnowflakeConverter.bind(statement, index, schema, value);
-            if (!bound) {
-                throw new ConnectException("Unknown source data type: " + schema.type());
-            }
+            return;
         }
+
+        AvroSnowflakeConverter.bind(statement, index, schema, value);
     }
 
     public void bind(SinkRecord record) throws SQLException {
@@ -46,6 +45,10 @@ public final class QueryStatementBinder {
     }
 
     private int bindKeyFields(SinkRecord record, int columnIndex) throws SQLException {
+        if(Objects.isNull(topicSchemas.keySchema())){
+            return columnIndex;
+        }
+
         if (topicSchemas.keySchema().type().isPrimitive()) {
             throw new AssertionError("Key schema was primitive - unsupported. Must be null or struct.");
         }

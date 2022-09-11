@@ -123,7 +123,7 @@ final class AvroSnowflakeConverter {
     }
 
 
-    static boolean bind(PreparedStatement statement, int index, Schema schema, Object value) throws SQLException {
+    static void bind(PreparedStatement statement, int index, Schema schema, Object value) throws SQLException {
 
         if (schema.name() != null) {
             switch (schema.name()) {
@@ -133,24 +133,24 @@ final class AvroSnowflakeConverter {
                             new java.sql.Date(((java.util.Date) value).getTime()),
                             DateTimeUtils.getTimeZoneCalendar()
                     );
-                    return true;
+                    return;
                 case Decimal.LOGICAL_NAME:
                     statement.setBigDecimal(index, (BigDecimal) value);
-                    return true;
+                    return;
                 case Time.LOGICAL_NAME:
                     statement.setTime(
                             index,
                             new java.sql.Time(((java.util.Date) value).getTime()),
                             DateTimeUtils.getTimeZoneCalendar()
                     );
-                    return true;
+                    return;
                 case org.apache.kafka.connect.data.Timestamp.LOGICAL_NAME:
                     statement.setTimestamp(
                             index,
                             new java.sql.Timestamp(((java.util.Date) value).getTime()),
                             DateTimeUtils.getTimeZoneCalendar()
                     );
-                    return true;
+                    return;
                 default:
                     // fall through to regular types
             }
@@ -159,34 +159,34 @@ final class AvroSnowflakeConverter {
         switch (schema.type()) {
             case INT8:
                 statement.setByte(index, (Byte) value);
-                return true;
+                return;
             case INT16:
                 statement.setShort(index, (Short) value);
-                return true;
+                return;
             case INT32:
                 statement.setInt(index, (Integer) value);
-                return true;
+                return;
             case INT64:
                 statement.setLong(index, (Long) value);
-                return true;
+                return;
             case FLOAT32:
                 statement.setFloat(index, (Float) value);
-                return true;
+                return;
             case FLOAT64:
                 statement.setDouble(index, (Double) value);
-                return true;
+                return;
             case BOOLEAN:
                 statement.setBoolean(index, (Boolean) value);
-                return true;
+                return;
             case STRING:
                 statement.setString(index, (String) value);
-                return true;
+                return;
             case ARRAY:
             case MAP:
             case STRUCT:
                 String structJson = convertToJSON(value);
                 statement.setString(index, structJson);
-                return true;
+                return;
             case BYTES:
                 final byte[] bytes;
                 if (value instanceof ByteBuffer) {
@@ -197,9 +197,9 @@ final class AvroSnowflakeConverter {
                     bytes = (byte[]) value;
                 }
                 statement.setBytes(index, bytes);
-                return true;
+                return;
             default:
-                return false;
+                throw new ConnectException("Unknown source data type: " + schema.type());
         }
     }
 
