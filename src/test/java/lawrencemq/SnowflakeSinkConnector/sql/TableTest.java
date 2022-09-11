@@ -13,22 +13,22 @@ class TableTest {
 
     @Test
     void getDatabaseName() {
-        assertEquals(table.getDatabaseName(), "db");
+        assertEquals(table.getDatabaseName(), "DB");
     }
 
     @Test
     void getSchemaName() {
-        assertEquals(table.getSchemaName(), "schema");
+        assertEquals(table.getSchemaName(), "SCHEMA");
     }
 
     @Test
     void getTableName() {
-        assertEquals(table.getTableName(), "table");
+        assertEquals(table.getTableName(), "TABLE");
     }
 
     @Test
     void testEquals() {
-        Table testTable = new Table("db", "schema", "table");
+        Table testTable = new Table("DB", "SCHEMA", "TABLE");
         assertEquals(table, testTable);
     }
 
@@ -42,7 +42,7 @@ class TableTest {
 
     @Test
     void testToString() {
-        assertEquals(table.toString(), "\"db\".\"schema\".\"table\"");
+        assertEquals(table.toString(), "\"DB\".\"SCHEMA\".\"TABLE\"");
     }
 
 }
