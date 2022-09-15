@@ -77,7 +77,7 @@ public class RecordBuffer {
                     record.keySchema(),
                     record.valueSchema()
             );
-            kafkaFieldsMetadata = KafkaFieldsMetadata.extract(tableManager.getTable().getTableName(), topicSchemas);
+            kafkaFieldsMetadata = KafkaFieldsMetadata.from(tableManager.getTable().getTableName(), topicSchemas);
             tableManager.createOrAmendTable(
                     connection,
                     kafkaFieldsMetadata
@@ -91,8 +91,8 @@ public class RecordBuffer {
                     .getTableDescription(connection)
                     .orElseThrow(() -> new TableDoesNotExistException(String.format("Unable to find table %s", tableManager.getTable())));
 
-            insertPreparedStatement = SnowflakeSql.createPreparedStatement(connection, insertSql);
-            insertStatementBinder = SnowflakeSql.newStatementBinder(
+            insertPreparedStatement = connection.prepareStatement(insertSql);
+            insertStatementBinder =  new QueryStatementBinder(
                     insertPreparedStatement,
                     topicSchemas,
                     kafkaFieldsMetadata

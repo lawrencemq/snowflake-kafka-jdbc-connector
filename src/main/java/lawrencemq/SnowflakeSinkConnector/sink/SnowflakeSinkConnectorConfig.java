@@ -91,6 +91,7 @@ public class SnowflakeSinkConnectorConfig extends AbstractConfig {
             )
             .define(SNOWFLAKE_PRIVATE_KEY_FILE,
                     ConfigDef.Type.STRING,
+                    "",
                     ConfigDef.Importance.HIGH,
                     "Snowflake usernames may connect with an RSA private key. Provide the filename and its location.",
                     SNOWFLAKE_CONNECTION_GROUP,

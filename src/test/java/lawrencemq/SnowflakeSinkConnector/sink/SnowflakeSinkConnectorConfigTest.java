@@ -109,13 +109,6 @@ class SnowflakeSinkConnectorConfigTest {
     }
 
     @Test
-    void shouldRequireSnowflakePrivateKeyFile(){
-        Properties propsWithoutPrivateKey = createDefaultConfig();
-        propsWithoutPrivateKey.remove("snowflake.private.key.filename");
-        ensureThrowsConfigErrorWithMessage(propsWithoutPrivateKey, "Missing required configuration \"snowflake.private.key.filename\"");
-    }
-
-    @Test
     void ensureDefaultArgumentsAreSet(){
         Properties props = new Properties();
         props.put("snowflake.username", "testName");

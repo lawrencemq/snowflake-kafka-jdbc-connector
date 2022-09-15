@@ -3,6 +3,7 @@ package lawrencemq.SnowflakeSinkConnector.sink;
 
 import lawrencemq.SnowflakeSinkConnector.sink.exceptions.TableAlterOrCreateException;
 import lawrencemq.SnowflakeSinkConnector.sink.exceptions.TableDoesNotExistException;
+import lawrencemq.SnowflakeSinkConnector.sql.ColumnDescription;
 import lawrencemq.SnowflakeSinkConnector.sql.Table;
 import lawrencemq.SnowflakeSinkConnector.sql.TableDescription;
 import lawrencemq.SnowflakeSinkConnector.sql.SnowflakeSql;
@@ -11,16 +12,21 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.sql.Connection;
+import java.sql.DatabaseMetaData;
+import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.Collection;
+import java.util.LinkedHashMap;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 
-final class TableManager {
+class TableManager {
     private static final Logger log = LoggerFactory.getLogger(TableManager.class);
+    private static final String[] TABLE_TYPES = new String[]{"TABLE"};
 
 
     private final Table table;
@@ -34,11 +40,85 @@ final class TableManager {
         this.maybeTableDescription = Optional.empty();
     }
 
+    public Table getTable() {
+        return table;
+    }
+    protected boolean tableExists(Connection connection, Table table) throws SQLException {
+        log.info("Checking Snowflake - does {} exist?", table);
+        try (ResultSet rs = connection.getMetaData().getTables(
+                table.getDatabaseName(),
+                table.getSchemaName(),
+                table.getTableName(),
+                TABLE_TYPES
+        )) {
+            boolean exists = rs.next();  // cursor should not be at end if exists
+            log.info("Table {} {}", table, exists ? "exists" : "does not exist");
+            return exists;
+        }
+    }
+
+    private LinkedHashMap<String, ColumnDescription> describeColumns(Connection connection, Table table) throws SQLException {
+        log.debug("Querying for column metadata for {}", table);
+
+        LinkedHashMap<String, ColumnDescription> results = new LinkedHashMap<>();
+        try (ResultSet rs = connection.getMetaData().getColumns(
+                table.getDatabaseName(),
+                table.getSchemaName(),
+                table.getTableName(),
+                null
+        )) {
+            while (rs.next()) {
+                String columnName = rs.getString(4);
+                int jdbcType = rs.getInt(5);
+                String typeName = rs.getString(6);
+                int nullableValue = rs.getInt(11);
+                boolean nullability = nullableValue == DatabaseMetaData.columnNullable;
+
+                results.put(columnName, new ColumnDescription(
+                        columnName,
+                        jdbcType,
+                        typeName,
+                        nullability
+                ));
+            }
+            return results;
+        }
+    }
+
+    private Optional<TableDescription> describeTable(Connection connection, Table table) throws SQLException {
+        LinkedHashMap<String, ColumnDescription> columnDescriptions = describeColumns(connection, table);
+        if (columnDescriptions.isEmpty()) {
+            return Optional.empty();
+        }
+        return Optional.of(new TableDescription(table, columnDescriptions));
+    }
+
+    private void applyDdlStatement(Connection connection, String ddlStatement) throws SQLException {
+        try (Statement statement = connection.createStatement()) {
+            statement.executeUpdate(ddlStatement);
+        }
+        try {
+            connection.commit();
+        } catch (Exception e) { // if anything unexpected happens, rollback
+            try {
+                connection.rollback();
+            } catch (SQLException e2) {
+                e.addSuppressed(e2);
+            } finally {
+                throw e;
+            }
+        }
+    }
+
     boolean createOrAmendTable(Connection connection, KafkaFieldsMetadata kafkaFieldsMetadata) throws SQLException, TableAlterOrCreateException {
+        createTableIfNecessary(connection, kafkaFieldsMetadata);
+        return amendIfNecessary(connection, kafkaFieldsMetadata, config.maxRetries);
+    }
+
+    protected void createTableIfNecessary(Connection connection, KafkaFieldsMetadata kafkaFieldsMetadata) throws SQLException {
         if (tableNeedsCreating(connection)) {
             createTableWith(connection, kafkaFieldsMetadata);
         }
-        return amendIfNecessary(connection, kafkaFieldsMetadata, config.maxRetries);
     }
 
     private void createTableWith(Connection connection, KafkaFieldsMetadata kafkaFieldsMetadata) throws SQLException {
@@ -63,6 +143,7 @@ final class TableManager {
     }
 
     Optional<TableDescription> getTableDescription(Connection connection) throws SQLException {
+        // TODO THIS WHOLE PROCESS CAN BE SIMPLIFIED
         Optional<TableDescription> desc = fetchTableDescription(connection);
         if (desc.isPresent()) {
             return desc;
@@ -70,7 +151,7 @@ final class TableManager {
         return refreshTableDescription(connection);
     }
 
-    void create(Connection connection, KafkaFieldsMetadata kafkaFieldsMetadata) throws SQLException, TableAlterOrCreateException {
+    private void create(Connection connection, KafkaFieldsMetadata kafkaFieldsMetadata) throws SQLException, TableAlterOrCreateException {
         if (!config.autoCreate) {
             throw new TableAlterOrCreateException(
                     String.format("Table %s is missing and auto-creation is disabled", table)
@@ -78,10 +159,10 @@ final class TableManager {
         }
         String sql = SnowflakeSql.buildCreateTableStatement(table, kafkaFieldsMetadata.getAllFields().values());
         log.info("Creating table with sql: {}", sql);
-        SnowflakeSql.applyDdlStatement(connection, sql);
+        applyDdlStatement(connection, sql);
     }
 
-    boolean amendIfNecessary(Connection connection, KafkaFieldsMetadata kafkaFieldsMetadata, int maxRetries) throws SQLException, TableAlterOrCreateException, TableDoesNotExistException {
+    protected boolean amendIfNecessary(Connection connection, KafkaFieldsMetadata kafkaFieldsMetadata, int maxRetries) throws SQLException, TableAlterOrCreateException, TableDoesNotExistException {
 
         TableDescription tableDesc = getLatestTableDescription(connection);
 
@@ -110,7 +191,7 @@ final class TableManager {
         );
 
         try {
-            SnowflakeSql.applyDdlStatement(connection, amendTableQueries);
+            applyDdlStatement(connection, amendTableQueries);
         } catch (SQLException e) {
             if (maxRetries <= 0) {
                 throw new TableAlterOrCreateException(
@@ -137,7 +218,7 @@ final class TableManager {
         return true;
     }
 
-    private TableDescription getLatestTableDescription(Connection connection) throws SQLException {
+    protected TableDescription getLatestTableDescription(Connection connection) throws SQLException {
         return fetchTableDescription(connection)
                 .orElseThrow(() -> new TableDoesNotExistException(String.format("Unable to find table %s", table)));
     }
@@ -154,19 +235,19 @@ final class TableManager {
         }
     }
 
-    Set<Schema> findMissingFields(Collection<Schema> kafkaFields, Set<String> currentTableColumns) {
+    private Set<Schema> findMissingFields(Collection<Schema> kafkaFields, Set<String> currentTableColumns) {
         Set<String> upperCaseColumns = currentTableColumns.stream()
                 .map(String::toUpperCase)
                 .collect(Collectors.toSet());
 
         return kafkaFields.stream()
-                .filter(field -> !currentTableColumns.contains(field.name()) && !upperCaseColumns.contains(field.name().toUpperCase()))
+                .filter(field -> !upperCaseColumns.contains(field.name().toUpperCase()))
                 .collect(Collectors.toSet());
     }
 
-    Optional<TableDescription> fetchTableDescription(Connection connection) throws SQLException {
-        if (maybeTableDescription.isEmpty() && SnowflakeSql.tableExists(connection, table)) {
-            Optional<TableDescription> dbTable = SnowflakeSql.describeTable(connection, table);
+    private Optional<TableDescription> fetchTableDescription(Connection connection) throws SQLException {
+        if (maybeTableDescription.isEmpty() && tableExists(connection, table)) {
+            Optional<TableDescription> dbTable = describeTable(connection, table);
             if (dbTable.isPresent()) {
                 log.info("Setting metadata for table {} to {}", table, dbTable.get());
                 maybeTableDescription = dbTable;
@@ -175,8 +256,8 @@ final class TableManager {
         return maybeTableDescription;
     }
 
-    Optional<TableDescription> refreshTableDescription(Connection connection) throws SQLException {
-        Optional<TableDescription> dbTable = SnowflakeSql.describeTable(connection, table);
+    protected Optional<TableDescription> refreshTableDescription(Connection connection) throws SQLException {
+        Optional<TableDescription> dbTable = describeTable(connection, table);
         if (dbTable.isPresent()) {
             log.info("Refreshing metadata for table {} to {}", table, dbTable);
             maybeTableDescription = dbTable;
@@ -186,7 +267,5 @@ final class TableManager {
         return maybeTableDescription;
     }
 
-    public Table getTable() {
-        return table;
-    }
+
 }

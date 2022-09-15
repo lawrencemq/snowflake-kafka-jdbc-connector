@@ -5,11 +5,11 @@ import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.Set;
 
-public final class TableDescription {
+public class TableDescription {
     private final Table table;
     private final LinkedHashMap<String, ColumnDescription> columnsByName;
 
-    TableDescription(Table table, LinkedHashMap<String, ColumnDescription> columnsByName) {
+    public TableDescription(Table table, LinkedHashMap<String, ColumnDescription> columnsByName) {
         this.table = table;
         this.columnsByName = columnsByName;
     }

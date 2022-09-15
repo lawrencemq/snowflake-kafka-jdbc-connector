@@ -106,9 +106,9 @@ final class AvroSnowflakeConverter {
                 builder.appendStringQuoted(value);
                 return;
             case BYTES: {
-                final byte[] bytes;
+                byte[] bytes;
                 if (value instanceof ByteBuffer) {
-                    final ByteBuffer buffer = ((ByteBuffer) value).slice();
+                    ByteBuffer buffer = ((ByteBuffer) value).slice();
                     bytes = new byte[buffer.remaining()];
                     buffer.get(bytes);
                 } else {
@@ -188,9 +188,9 @@ final class AvroSnowflakeConverter {
                 statement.setString(index, structJson);
                 return;
             case BYTES:
-                final byte[] bytes;
+                byte[] bytes;
                 if (value instanceof ByteBuffer) {
-                    final ByteBuffer buffer = ((ByteBuffer) value).slice();
+                    ByteBuffer buffer = ((ByteBuffer) value).slice();
                     bytes = new byte[buffer.remaining()];
                     buffer.get(bytes);
                 } else {

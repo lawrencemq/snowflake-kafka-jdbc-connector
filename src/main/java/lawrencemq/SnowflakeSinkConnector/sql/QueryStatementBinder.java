@@ -20,7 +20,7 @@ public final class QueryStatementBinder {
     private final KafkaFieldsMetadata kafkaFieldsMetadata;
 
 
-    QueryStatementBinder(PreparedStatement statement, TopicSchemas topicSchemas, KafkaFieldsMetadata kafkaFieldsMetadata) {
+    public QueryStatementBinder(PreparedStatement statement, TopicSchemas topicSchemas, KafkaFieldsMetadata kafkaFieldsMetadata) {
         this.statement = statement;
         this.topicSchemas = topicSchemas;
         this.kafkaFieldsMetadata = kafkaFieldsMetadata;
