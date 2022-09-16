@@ -17,9 +17,9 @@ public class KafkaFieldsMetadata {
 
     private final Set<String> keyFields;
     private final Set<String> valueFields;
-    private final Map<String, Schema> allFields;
+    private final LinkedHashMap<String, Schema> allFields;
 
-    public KafkaFieldsMetadata(Set<String> keyFields, Set<String> valueFields, Map<String, Schema> allFields) {
+    public KafkaFieldsMetadata(Set<String> keyFields, Set<String> valueFields, LinkedHashMap<String, Schema> allFields) {
         this.keyFields = keyFields;
         this.valueFields = valueFields;
         this.allFields = allFields;

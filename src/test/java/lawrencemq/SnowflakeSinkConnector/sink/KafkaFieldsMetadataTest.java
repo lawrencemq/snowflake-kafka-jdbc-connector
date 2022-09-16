@@ -6,11 +6,7 @@ import org.apache.kafka.connect.data.Schema;
 import org.apache.kafka.connect.data.SchemaBuilder;
 import org.junit.jupiter.api.Test;
 
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -32,11 +28,13 @@ class KafkaFieldsMetadataTest {
             .field("entirely", SchemaBuilder.OPTIONAL_BOOLEAN_SCHEMA)
             .build();
 
-    private static Map<String, Schema> getMapOf(Schema... allSchemas) {
-        return Arrays.stream(allSchemas)
+    private static LinkedHashMap<String, Schema> getMapOf(Schema... allSchemas) {
+        LinkedHashMap<String, Schema> allFields = new LinkedHashMap<>();
+        Arrays.stream(allSchemas)
                 .map(Schema::fields)
                 .flatMap(Collection::stream)
-                .collect(Collectors.toMap(Field::name, Field::schema));
+                .forEach(field -> allFields.put(field.name(), field.schema()));
+        return allFields;
     }
 
     private static Set<String> getFieldNamesFor(Schema schema) {
@@ -50,7 +48,7 @@ class KafkaFieldsMetadataTest {
     void testGetters() {
         Set<String> keyFields = getFieldNamesFor(KEY_SCHEMA);
         Set<String> valueFields = getFieldNamesFor(VALUE_SCHEMA);
-        Map<String, Schema> fieldsToSchemaMap = getMapOf(KEY_SCHEMA, VALUE_SCHEMA);
+        LinkedHashMap<String, Schema> fieldsToSchemaMap = getMapOf(KEY_SCHEMA, VALUE_SCHEMA);
         KafkaFieldsMetadata metadata = new KafkaFieldsMetadata(keyFields, valueFields, fieldsToSchemaMap);
 
         assertSame(keyFields, metadata.getKeyFields());
@@ -140,7 +138,7 @@ class KafkaFieldsMetadataTest {
     void testToString() {
         Set<String> keyFields = getFieldNamesFor(KEY_SCHEMA);
         Set<String> valueFields = getFieldNamesFor(VALUE_SCHEMA);
-        Map<String, Schema> fieldsToSchemaMap = getMapOf(KEY_SCHEMA, VALUE_SCHEMA);
+        LinkedHashMap<String, Schema> fieldsToSchemaMap = getMapOf(KEY_SCHEMA, VALUE_SCHEMA);
         KafkaFieldsMetadata metadata = new KafkaFieldsMetadata(keyFields, valueFields, fieldsToSchemaMap);
         assertEquals(metadata.toString(), "KafkaFieldsMetadata{keyFields=[id],valueFields=[else, entirely, something]}");
     }

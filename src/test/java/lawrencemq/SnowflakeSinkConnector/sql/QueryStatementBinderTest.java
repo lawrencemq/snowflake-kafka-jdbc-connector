@@ -71,18 +71,20 @@ class QueryStatementBinderTest {
             .put("timestamp", datetime);
 
     Set<String> valueFields = schemaToFieldsSet(valueSchema);
-    Map<String, Schema> valueMap = schemaToFieldsMap(valueSchema);
+    LinkedHashMap<String, Schema> valueMap = schemaToFieldsMap(valueSchema);
 
     private static Set<String> schemaToFieldsSet(Schema schema) {
         return schema.fields().stream().map(Field::name).collect(Collectors.toCollection(LinkedHashSet::new));
     }
 
-    private static Map<String, Schema> schemaToFieldsMap(Schema schema) {
-        return schema.fields().stream().collect(Collectors.toMap(Field::name, Field::schema));
+    private static LinkedHashMap<String, Schema> schemaToFieldsMap(Schema schema) {
+        LinkedHashMap<String,Schema> schemaToFields = new LinkedHashMap<>();
+        schema.fields().stream().forEach(field -> schemaToFields.put(field.name(), field.schema()));
+        return schemaToFields;
     }
 
-    private static <K, V> Map<K, V> unionMaps(Map<K, V> m1, Map<K, V> m2) {
-        Map<K, V> allFieldsMap = new HashMap<>(m1);
+    private static <K, V> LinkedHashMap<K, V> unionMaps(LinkedHashMap<K, V> m1, LinkedHashMap<K, V> m2) {
+        LinkedHashMap<K, V> allFieldsMap = new LinkedHashMap<>(m1);
         allFieldsMap.putAll(m2);
         return allFieldsMap;
     }
@@ -91,9 +93,12 @@ class QueryStatementBinderTest {
     @Test
     void bindPrimitiveKey() {
         Schema keySchema = SchemaBuilder.int32().name("int32Key").defaultValue(12).build();
+        LinkedHashMap<String,Schema> fieldToSchemaMap = new LinkedHashMap<>();
+        fieldToSchemaMap.put(keySchema.name(), keySchema);
+        fieldToSchemaMap.put(valueSchema.name(), valueSchema);
 
         TopicSchemas topicSchemas = new TopicSchemas(keySchema, valueSchema);
-        KafkaFieldsMetadata kafkaFieldsMetadata = new KafkaFieldsMetadata(Set.of(keySchema.name()), Set.of(valueSchema.name()), Map.of(keySchema.name(), keySchema, valueSchema.name(), valueSchema));
+        KafkaFieldsMetadata kafkaFieldsMetadata = new KafkaFieldsMetadata(Set.of(keySchema.name()), Set.of(valueSchema.name()), fieldToSchemaMap);
         SinkRecord record = new SinkRecord(topic, partition, keySchema, 42, valueSchema, value, kafkaOffset);
         PreparedStatement statement = mock(PreparedStatement.class);
 
@@ -127,8 +132,8 @@ class QueryStatementBinderTest {
                 .put("lastName", "Fry");
 
         Set<String> keyFields = schemaToFieldsSet(keySchema);
-        Map<String, Schema> keyMap = schemaToFieldsMap(keySchema);
-        Map<String, Schema> allFieldsMap = unionMaps(valueMap, keyMap);
+        LinkedHashMap<String, Schema> keyMap = schemaToFieldsMap(keySchema);
+        LinkedHashMap<String, Schema> allFieldsMap = unionMaps(valueMap, keyMap);
 
         TopicSchemas topicSchemas = new TopicSchemas(keySchema, valueSchema);
         KafkaFieldsMetadata kafkaFieldsMetadata = new KafkaFieldsMetadata(keyFields, valueFields, allFieldsMap);

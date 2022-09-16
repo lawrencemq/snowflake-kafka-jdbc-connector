@@ -145,7 +145,7 @@ class TableManager {
 
         LinkedHashSet<String> tableDesc = getLatestTableColumns(connection);
 
-        Set<Schema> missingFields = findMissingFields(
+        List<Schema> missingFields = findMissingFields(
                 kafkaFieldsMetadata.getAllFields().values(),
                 tableDesc
         );
@@ -197,7 +197,7 @@ class TableManager {
         return true;
     }
 
-    private void ensureMissingFieldsConfigurations(Set<Schema> missingFields) {
+    private void ensureMissingFieldsConfigurations(List<Schema> missingFields) {
         for (Schema missingField : missingFields) {
             if (!missingField.isOptional() && Objects.isNull(missingField.defaultValue())) {
                 throw new TableAlterOrCreateException(String.format(
@@ -209,14 +209,14 @@ class TableManager {
         }
     }
 
-    private Set<Schema> findMissingFields(Collection<Schema> kafkaFields, Set<String> currentTableColumns) {
+    private List<Schema> findMissingFields(Collection<Schema> kafkaFields, Set<String> currentTableColumns) {
         Set<String> upperCaseTableColumns = currentTableColumns.stream()
                 .map(String::toUpperCase)
                 .collect(Collectors.toSet());
 
         return kafkaFields.stream()
                 .filter(field -> !upperCaseTableColumns.contains(field.name().toUpperCase()))
-                .collect(Collectors.toSet());
+                .collect(Collectors.toList());
     }
 
     protected LinkedHashSet<String> getLatestTableColumns(Connection connection) throws SQLException {

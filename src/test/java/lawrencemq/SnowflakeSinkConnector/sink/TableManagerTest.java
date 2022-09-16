@@ -39,11 +39,11 @@ class TableManagerTest {
             .name("valueSchema")
             .field("string", SchemaBuilder.string().name("string").build())
             .field("int16maybe", SchemaBuilder.int16().optional().name("int16maybe").build())
-            .field("trueMaybe", SchemaBuilder.bool().optional().name("trueMaybe").build())
+            .field("TRUE_MAYBE", SchemaBuilder.bool().optional().name("TRUE_MAYBE").build())
             .build();
 
-    private static Map<String, Schema> getMapOf(Schema... allSchemas) {
-        Map<String, Schema> fieldNameToSchemaMap = new LinkedHashMap<>();
+    private static LinkedHashMap<String, Schema> getMapOf(Schema... allSchemas) {
+        LinkedHashMap<String, Schema> fieldNameToSchemaMap = new LinkedHashMap<>();
         Arrays.stream(allSchemas)
                 .map(Schema::fields)
                 .flatMap(Collection::stream)
@@ -133,7 +133,7 @@ class TableManagerTest {
                 "ID TEXT NOT NULL,\n" +
                 "STRING TEXT NOT NULL,\n" +
                 "INT16MAYBE NUMBER,\n" +
-                "TRUEMAYBE BOOLEAN)";
+                "TRUE_MAYBE BOOLEAN)";
         verify(statement).executeUpdate(expectedCreateStatement);
     }
 
@@ -250,13 +250,13 @@ class TableManagerTest {
 
         String expectedAlterStatement = "ALTER TABLE \"DB1\".\"SCHEMA2\".\"TABLE3\" \n" +
                 "ADD INT16MAYBE NUMBER,\n" +
-                "ADD TRUEMAYBE BOOLEAN";
+                "ADD TRUE_MAYBE BOOLEAN";
         verify(statement).executeUpdate(expectedAlterStatement);
         verify(connection).commit();
     }
 
     @Test
-    void refreshTableChecksForEmptyTableThatExists() throws SQLException {
+    void refreshTableChecksForEmptyTableThatExists(){
         Connection connection = mock(Connection.class);
         SnowflakeSinkConnectorConfig config = genConfig();
         TableManager tableManager = new TableManager(config, TABLE) {
