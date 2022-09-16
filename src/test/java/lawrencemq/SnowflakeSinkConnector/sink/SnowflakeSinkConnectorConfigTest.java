@@ -6,7 +6,11 @@ import org.junit.jupiter.api.Test;
 import java.util.Properties;
 import java.util.Set;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 class SnowflakeSinkConnectorConfigTest {
 
@@ -125,8 +129,8 @@ class SnowflakeSinkConnectorConfigTest {
         assertEquals(config.maxRetries, 3);
         assertEquals(config.retryBackoffMs, 5_000);
         assertEquals(config.batchSize, 3_000);
-        assertEquals(config.autoCreate, true);
-        assertEquals(config.autoEvolve, true);
+        assertTrue(config.autoCreate);
+        assertTrue(config.autoEvolve);
 
     }
 

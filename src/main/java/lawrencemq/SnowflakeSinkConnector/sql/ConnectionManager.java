@@ -3,17 +3,28 @@ package lawrencemq.SnowflakeSinkConnector.sql;
 
 import lawrencemq.SnowflakeSinkConnector.sink.SnowflakeSinkConnectorConfig;
 import org.apache.kafka.connect.errors.ConnectException;
+import org.bouncycastle.asn1.pkcs.*;
+import org.bouncycastle.jce.provider.*;
+import org.bouncycastle.openssl.*;
+import org.bouncycastle.openssl.jcajce.*;
+import org.bouncycastle.operator.*;
+import org.bouncycastle.pkcs.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.FileReader;
+import java.io.IOException;
+import java.nio.file.Paths;
+import java.security.PrivateKey;
+import java.security.Security;
 import java.sql.Connection;
+import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.Objects;
+import java.util.Properties;
 
-import static lawrencemq.SnowflakeSinkConnector.sql.SnowflakeConnection.getSnowflakeConnection;
 
-
-public final class ConnectionManager implements AutoCloseable {
+public class ConnectionManager implements AutoCloseable {
 
     private static final Logger log = LoggerFactory.getLogger(ConnectionManager.class);
 
@@ -58,15 +69,18 @@ public final class ConnectionManager implements AutoCloseable {
     }
 
     private void newConnection() throws SQLException {
-        for (int attempts = 1; attempts <= maxConnectionAttempts; attempts++) {
-            log.info("Attempt {} to open connection to {}", attempts, this);
+        String url = createConnectionUrl();
+        Properties props = createConnectionProps();
+
+        for (int attemptCount = 1; attemptCount <= maxConnectionAttempts; attemptCount++) {
+            log.info("Attempt {} to open connection to {}", attemptCount, url);
             try {
-                connection = getSnowflakeConnection(config);
+                connection = getSnowflakeConnection(url, props);
                 connection.setAutoCommit(false);
-                log.info("Snowflake JDBC writer connected.");
+                log.info("New Snowflake JDBC connected successfully.");
                 return;
             } catch (SQLException e) {
-                if (attempts + 1 > maxConnectionAttempts) {
+                if (attemptCount + 1 > maxConnectionAttempts) {
                     throw e;
                 }
                 log.warn("Unable to connect to Snowflake. Will retry in {} ms.", connectionRetryBackoff, e);
@@ -77,6 +91,35 @@ public final class ConnectionManager implements AutoCloseable {
                 }
             }
         }
+    }
+
+    private Properties createConnectionProps() {
+
+        Properties props = new Properties();
+        props.put("user", config.username);
+//        try {
+//            prop.put("privateKey", PrivateKeyReader.get(config.privateKey, config.passphrase.value()));
+//        } catch (IOException e) {
+//            throw new RuntimeException("Unable to read private key file.", e);
+//        } catch (PKCSException e) {
+//            throw new RuntimeException("Unable to decrypt private key file", e);
+//        } catch (OperatorCreationException e) {
+//            throw new RuntimeException("Unknown error reading private key", e);
+//        }
+
+        props.put("private_key_file", config.privateKeyFile);
+        props.put("private_key_file_pwd", config.passphrase.value());
+        props.put("db", config.db);
+        props.put("schema", config.schema);
+        props.put("warehouse", config.warehouse);
+        props.put("role", config.role);
+        return props;
+    }
+
+    private String createConnectionUrl() {
+        //  "jdbc:snowflake://<account_identifier>.snowflakecomputing.com";
+        String url = "jdbc:snowflake://" + config.accountIdentifier + ".snowflakecomputing.com";
+        return url;
     }
 
     @Override
@@ -90,6 +133,38 @@ public final class ConnectionManager implements AutoCloseable {
             } finally {
                 connection = null;
             }
+        }
+    }
+
+
+    protected Connection getSnowflakeConnection(String url, Properties props) throws SQLException {
+        return DriverManager.getConnection(url, props);
+    }
+    /**
+     * https://docs.snowflake.com/en/user-guide/jdbc-configure.html
+     * Under the Sample Code section
+     */
+    private class PrivateKeyReader {
+
+
+        public PrivateKey get(String filename, String passphrase) throws IOException, PKCSException, OperatorCreationException {
+            PrivateKeyInfo privateKeyInfo = null;
+            Security.addProvider(new BouncyCastleProvider());
+            // Read an object from the private key file.
+            PEMParser pemParser = new PEMParser(new FileReader(Paths.get(filename).toFile()));
+            Object pemObject = pemParser.readObject();
+            if (pemObject instanceof PKCS8EncryptedPrivateKeyInfo) {
+                // Handle the case where the private key is encrypted.
+                PKCS8EncryptedPrivateKeyInfo encryptedPrivateKeyInfo = (PKCS8EncryptedPrivateKeyInfo) pemObject;
+                InputDecryptorProvider pkcs8Prov = new JceOpenSSLPKCS8DecryptorProviderBuilder().build(passphrase.toCharArray());
+                privateKeyInfo = encryptedPrivateKeyInfo.decryptPrivateKeyInfo(pkcs8Prov);
+            } else if (pemObject instanceof PrivateKeyInfo) {
+                // Handle the case where the private key is unencrypted.
+                privateKeyInfo = (PrivateKeyInfo) pemObject;
+            }
+            pemParser.close();
+            JcaPEMKeyConverter converter = new JcaPEMKeyConverter().setProvider(BouncyCastleProvider.PROVIDER_NAME);
+            return converter.getPrivateKey(privateKeyInfo);
         }
     }
 
