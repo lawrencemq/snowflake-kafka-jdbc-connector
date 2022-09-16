@@ -1,13 +1,12 @@
 package lawrencemq.SnowflakeSinkConnector.sink;
 
+import lawrencemq.SnowflakeSinkConnector.sink.exceptions.InvalidColumnsError;
 import lawrencemq.SnowflakeSinkConnector.sink.exceptions.TableAlterOrCreateException;
-import lawrencemq.SnowflakeSinkConnector.sql.*;
+import lawrencemq.SnowflakeSinkConnector.sql.Table;
 import org.apache.kafka.connect.data.Field;
 import org.apache.kafka.connect.data.Schema;
 import org.apache.kafka.connect.data.SchemaBuilder;
 import org.junit.jupiter.api.Test;
-import org.mockito.MockedStatic;
-import org.mockito.Mockito;
 
 import java.sql.*;
 import java.util.*;
@@ -15,8 +14,12 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static lawrencemq.SnowflakeSinkConnector.sink.SnowflakeSinkConnectorConfig.*;
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 class TableManagerTest {
 
@@ -28,11 +31,11 @@ class TableManagerTest {
     private final static Table TABLE = new Table(DATABASE, SCHEMA, TABLE_NAME);
 
 
-    private static Schema keySchema = SchemaBuilder.struct()
+    private static final Schema KEY_SCHEMA = SchemaBuilder.struct()
             .name("keySchema")
             .field("id", SchemaBuilder.string().name("id").build())
             .build();
-    private static Schema valueSchema = SchemaBuilder.struct()
+    private static final Schema VALUE_SCHEMA = SchemaBuilder.struct()
             .name("valueSchema")
             .field("string", SchemaBuilder.string().name("string").build())
             .field("int16maybe", SchemaBuilder.int16().optional().name("int16maybe").build())
@@ -96,9 +99,9 @@ class TableManagerTest {
 
         assertThrows(TableAlterOrCreateException.class,
                 () -> tableManager.createOrAmendTable(connection,
-                        new KafkaFieldsMetadata(getFieldNamesFor(keySchema),
-                                getFieldNamesFor(valueSchema),
-                                getMapOf(keySchema, valueSchema)
+                        new KafkaFieldsMetadata(getFieldNamesFor(KEY_SCHEMA),
+                                getFieldNamesFor(VALUE_SCHEMA),
+                                getMapOf(KEY_SCHEMA, VALUE_SCHEMA)
                         )
                 )
         );
@@ -113,15 +116,16 @@ class TableManagerTest {
             protected boolean tableExists(Connection connection, Table table) {
                 return false;
             }
+
         };
 
         Statement statement = mock(Statement.class);
         when(connection.createStatement()).thenReturn(statement);
 
         tableManager.createTableIfNecessary(connection,
-                new KafkaFieldsMetadata(getFieldNamesFor(keySchema),
-                        getFieldNamesFor(valueSchema),
-                        getMapOf(keySchema, valueSchema)
+                new KafkaFieldsMetadata(getFieldNamesFor(KEY_SCHEMA),
+                        getFieldNamesFor(VALUE_SCHEMA),
+                        getMapOf(KEY_SCHEMA, VALUE_SCHEMA)
                 )
         );
 
@@ -136,22 +140,22 @@ class TableManagerTest {
     @Test
     void amendTableFailsAutoEvolveIsFalse() {
         Connection connection = mock(Connection.class);
-        TableDescription description = mock(TableDescription.class);
-        when(description.columnNames()).thenReturn(Set.of("string"));
+        LinkedHashSet<String> description = new LinkedHashSet<>();
+        description.add("string");
 
         SnowflakeSinkConnectorConfig config = genConfig(Map.of(AUTO_EVOLVE, false));
         TableManager tableManager = new TableManager(config, TABLE) {
             @Override
-            protected TableDescription getLatestTableDescription(Connection connection) {
+            protected LinkedHashSet<String> getLatestTableColumns(Connection connection) {
                 return description;
             }
         };
 
         assertThrows(TableAlterOrCreateException.class,
                 () -> tableManager.amendIfNecessary(connection,
-                        new KafkaFieldsMetadata(getFieldNamesFor(keySchema),
-                                getFieldNamesFor(valueSchema),
-                                getMapOf(keySchema, valueSchema)
+                        new KafkaFieldsMetadata(getFieldNamesFor(KEY_SCHEMA),
+                                getFieldNamesFor(VALUE_SCHEMA),
+                                getMapOf(KEY_SCHEMA, VALUE_SCHEMA)
                         ),
                         5
                 ),
@@ -162,26 +166,25 @@ class TableManagerTest {
     @Test
     void amendDoesNotAmendWhenSchemaIsUnchanged() throws SQLException {
 
-        Set<String> allColumnNames = getFieldNamesFor(valueSchema);
-        allColumnNames.addAll(getFieldNamesFor(keySchema));
+        Set<String> allColumnNames = getFieldNamesFor(VALUE_SCHEMA);
+        allColumnNames.addAll(getFieldNamesFor(KEY_SCHEMA));
 
         Connection connection = mock(Connection.class);
-        TableDescription description = mock(TableDescription.class);
-        when(description.columnNames()).thenReturn(allColumnNames);
+        LinkedHashSet<String> description = new LinkedHashSet<>(allColumnNames);
 
         SnowflakeSinkConnectorConfig config = genConfig();
         TableManager tableManager = new TableManager(config, TABLE) {
             @Override
-            protected TableDescription getLatestTableDescription(Connection connection) {
+            protected LinkedHashSet<String> getLatestTableColumns(Connection connection) {
                 return description;
             }
         };
 
         assertFalse(
                 tableManager.amendIfNecessary(connection,
-                        new KafkaFieldsMetadata(getFieldNamesFor(keySchema),
-                                getFieldNamesFor(valueSchema),
-                                getMapOf(keySchema, valueSchema)
+                        new KafkaFieldsMetadata(getFieldNamesFor(KEY_SCHEMA),
+                                getFieldNamesFor(VALUE_SCHEMA),
+                                getMapOf(KEY_SCHEMA, VALUE_SCHEMA)
                         ),
                         5
                 )
@@ -191,22 +194,22 @@ class TableManagerTest {
     @Test
     void amendFailsWithNewNonNullFieldWithNoDefault() {
         Connection connection = mock(Connection.class);
-        TableDescription description = mock(TableDescription.class);
-        when(description.columnNames()).thenReturn(Set.of("int16maybe"));
+        LinkedHashSet<String> description = new LinkedHashSet<>();
+        description.add("int16maybe");
 
         SnowflakeSinkConnectorConfig config = genConfig();
         TableManager tableManager = new TableManager(config, TABLE) {
             @Override
-            protected TableDescription getLatestTableDescription(Connection connection) {
+            protected LinkedHashSet<String> getLatestTableColumns(Connection connection) {
                 return description;
             }
         };
 
         assertThrows(TableAlterOrCreateException.class,
                 () -> tableManager.amendIfNecessary(connection,
-                        new KafkaFieldsMetadata(getFieldNamesFor(keySchema),
-                                getFieldNamesFor(valueSchema),
-                                getMapOf(keySchema, valueSchema)
+                        new KafkaFieldsMetadata(getFieldNamesFor(KEY_SCHEMA),
+                                getFieldNamesFor(VALUE_SCHEMA),
+                                getMapOf(KEY_SCHEMA, VALUE_SCHEMA)
                         ),
                         5
                 ),
@@ -217,11 +220,9 @@ class TableManagerTest {
     @Test
     void createOrAmendTableAmendsTable() throws SQLException {
         Connection connection = mock(Connection.class);
-        TableDescription description = mock(TableDescription.class);
-        Set<String> columnNames = new LinkedHashSet<>();
-        columnNames.add("id");
-        columnNames.add("string");
-        when(description.columnNames()).thenReturn(columnNames);
+        LinkedHashSet<String> description = new LinkedHashSet<>();
+        description.add("id");
+        description.add("string");
 
         Statement statement = mock(Statement.class);
         when(connection.createStatement()).thenReturn(statement);
@@ -229,19 +230,20 @@ class TableManagerTest {
         SnowflakeSinkConnectorConfig config = genConfig();
         TableManager tableManager = new TableManager(config, TABLE) {
             @Override
-            protected TableDescription getLatestTableDescription(Connection connection) {
-                return description;
+            protected boolean tableExists(Connection connection, Table table){
+                return true;
             }
+
             @Override
-            protected Optional<TableDescription> refreshTableDescription(Connection connection) throws SQLException {
-                return Optional.of(description);
+            protected LinkedHashSet<String> describeTable(Connection connection, Table table){
+                return description;
             }
         };
 
         assertTrue(tableManager.amendIfNecessary(connection,
-                new KafkaFieldsMetadata(getFieldNamesFor(keySchema),
-                        getFieldNamesFor(valueSchema),
-                        getMapOf(keySchema, valueSchema)
+                new KafkaFieldsMetadata(getFieldNamesFor(KEY_SCHEMA),
+                        getFieldNamesFor(VALUE_SCHEMA),
+                        getMapOf(KEY_SCHEMA, VALUE_SCHEMA)
                 ),
                 5
         ));
@@ -254,7 +256,26 @@ class TableManagerTest {
     }
 
     @Test
-    void getTableDescription() {
+    void refreshTableChecksForEmptyTableThatExists() throws SQLException {
+        Connection connection = mock(Connection.class);
+        SnowflakeSinkConnectorConfig config = genConfig();
+        TableManager tableManager = new TableManager(config, TABLE) {
+            @Override
+            protected boolean tableExists(Connection connection, Table table){
+                return true;
+            }
+
+            @Override
+            protected LinkedHashSet<String> describeTable(Connection connection, Table table){
+                return new LinkedHashSet<>();
+            }
+        };
+
+        assertThrows(InvalidColumnsError.class,
+                () -> tableManager.refreshTableDescription(connection),
+                "Should error if table is found to have no columns.");
+
     }
+
 
 }

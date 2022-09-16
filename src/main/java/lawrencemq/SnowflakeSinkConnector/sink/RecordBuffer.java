@@ -86,10 +86,7 @@ public class RecordBuffer {
             log.debug("sql: {}  meta: {}", insertSql, kafkaFieldsMetadata);
             close();
 
-            // Ensuring table description is recent
-            tableManager
-                    .getTableDescription(connection)
-                    .orElseThrow(() -> new TableDoesNotExistException(String.format("Unable to find table %s", tableManager.getTable())));
+            tableManager.ensureTableExists(connection);
 
             insertPreparedStatement = connection.prepareStatement(insertSql);
             insertStatementBinder =  new QueryStatementBinder(

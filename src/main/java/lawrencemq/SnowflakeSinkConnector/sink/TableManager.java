@@ -1,26 +1,18 @@
 package lawrencemq.SnowflakeSinkConnector.sink;
 
 
-import lawrencemq.SnowflakeSinkConnector.sink.exceptions.TableAlterOrCreateException;
-import lawrencemq.SnowflakeSinkConnector.sink.exceptions.TableDoesNotExistException;
-import lawrencemq.SnowflakeSinkConnector.sql.ColumnDescription;
+import lawrencemq.SnowflakeSinkConnector.sink.exceptions.*;
 import lawrencemq.SnowflakeSinkConnector.sql.Table;
-import lawrencemq.SnowflakeSinkConnector.sql.TableDescription;
 import lawrencemq.SnowflakeSinkConnector.sql.SnowflakeSql;
 import org.apache.kafka.connect.data.Schema;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.sql.Connection;
-import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.Collection;
-import java.util.LinkedHashMap;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 
@@ -32,17 +24,17 @@ class TableManager {
     private final Table table;
     private final SnowflakeSinkConnectorConfig config;
 
-    private Optional<TableDescription> maybeTableDescription;
+    private LinkedHashSet<String> latestTableDescription;
 
     TableManager(SnowflakeSinkConnectorConfig config, Table destinationTable) {
         this.config = config;
         this.table = destinationTable;
-        this.maybeTableDescription = Optional.empty();
     }
 
     public Table getTable() {
         return table;
     }
+
     protected boolean tableExists(Connection connection, Table table) throws SQLException {
         log.info("Checking Snowflake - does {} exist?", table);
         try (ResultSet rs = connection.getMetaData().getTables(
@@ -57,10 +49,11 @@ class TableManager {
         }
     }
 
-    private LinkedHashMap<String, ColumnDescription> describeColumns(Connection connection, Table table) throws SQLException {
+
+    protected LinkedHashSet<String> describeTable(Connection connection, Table table) throws SQLException {
         log.debug("Querying for column metadata for {}", table);
 
-        LinkedHashMap<String, ColumnDescription> results = new LinkedHashMap<>();
+        LinkedHashSet<String> columnDescriptions = new LinkedHashSet<>();
         try (ResultSet rs = connection.getMetaData().getColumns(
                 table.getDatabaseName(),
                 table.getSchemaName(),
@@ -69,28 +62,15 @@ class TableManager {
         )) {
             while (rs.next()) {
                 String columnName = rs.getString(4);
-                int jdbcType = rs.getInt(5);
-                String typeName = rs.getString(6);
-                int nullableValue = rs.getInt(11);
-                boolean nullability = nullableValue == DatabaseMetaData.columnNullable;
+//                int jdbcType = rs.getInt(5);
+//                String typeName = rs.getString(6);
+//                int nullableValue = rs.getInt(11);
+//                boolean nullability = nullableValue == DatabaseMetaData.columnNullable;
 
-                results.put(columnName, new ColumnDescription(
-                        columnName,
-                        jdbcType,
-                        typeName,
-                        nullability
-                ));
+                columnDescriptions.add(columnName);
             }
-            return results;
         }
-    }
-
-    private Optional<TableDescription> describeTable(Connection connection, Table table) throws SQLException {
-        LinkedHashMap<String, ColumnDescription> columnDescriptions = describeColumns(connection, table);
-        if (columnDescriptions.isEmpty()) {
-            return Optional.empty();
-        }
-        return Optional.of(new TableDescription(table, columnDescriptions));
+        return columnDescriptions;
     }
 
     private void applyDdlStatement(Connection connection, String ddlStatement) throws SQLException {
@@ -127,7 +107,7 @@ class TableManager {
         } catch (SQLException e) {
             log.warn("Create failed, will attempt amend if table already exists", e);
             try {
-                Optional<TableDescription> newDesc = refreshTableDescription(connection);
+                LinkedHashSet<String> newDesc = refreshTableDescription(connection);
                 if (newDesc.isEmpty()) {
                     throw e;
                 }
@@ -139,16 +119,15 @@ class TableManager {
     }
 
     private boolean tableNeedsCreating(Connection connection) throws SQLException {
-        return fetchTableDescription(connection).isEmpty();
+        try{
+            return getLatestTableColumns(connection).isEmpty();
+        }catch (TableDoesNotExistException e){
+            return true;
+        }
     }
 
-    Optional<TableDescription> getTableDescription(Connection connection) throws SQLException {
-        // TODO THIS WHOLE PROCESS CAN BE SIMPLIFIED
-        Optional<TableDescription> desc = fetchTableDescription(connection);
-        if (desc.isPresent()) {
-            return desc;
-        }
-        return refreshTableDescription(connection);
+    void ensureTableExists(Connection connection) throws SQLException {
+        getLatestTableColumns(connection);
     }
 
     private void create(Connection connection, KafkaFieldsMetadata kafkaFieldsMetadata) throws SQLException, TableAlterOrCreateException {
@@ -164,11 +143,11 @@ class TableManager {
 
     protected boolean amendIfNecessary(Connection connection, KafkaFieldsMetadata kafkaFieldsMetadata, int maxRetries) throws SQLException, TableAlterOrCreateException, TableDoesNotExistException {
 
-        TableDescription tableDesc = getLatestTableDescription(connection);
+        LinkedHashSet<String> tableDesc = getLatestTableColumns(connection);
 
         Set<Schema> missingFields = findMissingFields(
                 kafkaFieldsMetadata.getAllFields().values(),
-                tableDesc.columnNames()
+                tableDesc
         );
 
         if (missingFields.isEmpty()) {
@@ -218,11 +197,6 @@ class TableManager {
         return true;
     }
 
-    protected TableDescription getLatestTableDescription(Connection connection) throws SQLException {
-        return fetchTableDescription(connection)
-                .orElseThrow(() -> new TableDoesNotExistException(String.format("Unable to find table %s", table)));
-    }
-
     private void ensureMissingFieldsConfigurations(Set<Schema> missingFields) {
         for (Schema missingField : missingFields) {
             if (!missingField.isOptional() && Objects.isNull(missingField.defaultValue())) {
@@ -236,35 +210,37 @@ class TableManager {
     }
 
     private Set<Schema> findMissingFields(Collection<Schema> kafkaFields, Set<String> currentTableColumns) {
-        Set<String> upperCaseColumns = currentTableColumns.stream()
+        Set<String> upperCaseTableColumns = currentTableColumns.stream()
                 .map(String::toUpperCase)
                 .collect(Collectors.toSet());
 
         return kafkaFields.stream()
-                .filter(field -> !upperCaseColumns.contains(field.name().toUpperCase()))
+                .filter(field -> !upperCaseTableColumns.contains(field.name().toUpperCase()))
                 .collect(Collectors.toSet());
     }
 
-    private Optional<TableDescription> fetchTableDescription(Connection connection) throws SQLException {
-        if (maybeTableDescription.isEmpty() && tableExists(connection, table)) {
-            Optional<TableDescription> dbTable = describeTable(connection, table);
-            if (dbTable.isPresent()) {
-                log.info("Setting metadata for table {} to {}", table, dbTable.get());
-                maybeTableDescription = dbTable;
-            }
+    protected LinkedHashSet<String> getLatestTableColumns(Connection connection) throws SQLException {
+        if (Objects.isNull(latestTableDescription) || latestTableDescription.isEmpty()) {
+            return refreshTableDescription(connection);
         }
-        return maybeTableDescription;
+        return latestTableDescription;
     }
 
-    protected Optional<TableDescription> refreshTableDescription(Connection connection) throws SQLException {
-        Optional<TableDescription> dbTable = describeTable(connection, table);
-        if (dbTable.isPresent()) {
-            log.info("Refreshing metadata for table {} to {}", table, dbTable);
-            maybeTableDescription = dbTable;
-        } else {
-            log.warn("Failed to refresh metadata for table {}", table);
+    protected LinkedHashSet<String> refreshTableDescription(Connection connection) throws SQLException {
+
+        if (!tableExists(connection, table)) {
+            throw new TableDoesNotExistException(String.format("Unable to find table %s", table));
         }
-        return maybeTableDescription;
+
+        LinkedHashSet<String> updatedDescription = describeTable(connection, table);
+        if (updatedDescription.isEmpty()) {
+            throw new InvalidColumnsError("Failed to refresh metadata for table " + table);
+        } else {
+            log.info("Setting metadata for table {} to {}", table, updatedDescription);
+            latestTableDescription = updatedDescription;
+
+        }
+        return latestTableDescription;
     }
 
 
