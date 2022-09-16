@@ -40,17 +40,21 @@ class TableManagerTest {
             .build();
 
     private static Map<String, Schema> getMapOf(Schema... allSchemas) {
-        return Arrays.stream(allSchemas)
+        Map<String, Schema> fieldNameToSchemaMap = new LinkedHashMap<>();
+        Arrays.stream(allSchemas)
                 .map(Schema::fields)
                 .flatMap(Collection::stream)
-                .collect(Collectors.toMap(Field::name, Field::schema));
+                .forEach(field -> fieldNameToSchemaMap.put(field.name(), field.schema()));
+        return fieldNameToSchemaMap;
     }
 
     private static Set<String> getFieldNamesFor(Schema schema) {
-        return schema.fields()
+        Set<String> fieldNames = new LinkedHashSet<>();
+        schema.fields()
                 .stream()
                 .map(Field::name)
-                .collect(Collectors.toSet());
+                .forEach(fieldNames::add);
+        return fieldNames;
     }
 
     private static SnowflakeSinkConnectorConfig genConfig() {
@@ -121,11 +125,10 @@ class TableManagerTest {
                 )
         );
 
-        // TODO IS THE ORDER HERE RIGHT?
         String expectedCreateStatement = "CREATE TABLE \"DB1\".\"SCHEMA2\".\"TABLE3\" (\n" +
-                "INT16MAYBE NUMBER,\n" +
-                "STRING TEXT NOT NULL,\n" +
                 "ID TEXT NOT NULL,\n" +
+                "STRING TEXT NOT NULL,\n" +
+                "INT16MAYBE NUMBER,\n" +
                 "TRUEMAYBE BOOLEAN)";
         verify(statement).executeUpdate(expectedCreateStatement);
     }
@@ -215,7 +218,10 @@ class TableManagerTest {
     void createOrAmendTableAmendsTable() throws SQLException {
         Connection connection = mock(Connection.class);
         TableDescription description = mock(TableDescription.class);
-        when(description.columnNames()).thenReturn(Set.of("id", "string"));
+        Set<String> columnNames = new LinkedHashSet<>();
+        columnNames.add("id");
+        columnNames.add("string");
+        when(description.columnNames()).thenReturn(columnNames);
 
         Statement statement = mock(Statement.class);
         when(connection.createStatement()).thenReturn(statement);
@@ -241,8 +247,8 @@ class TableManagerTest {
         ));
 
         String expectedAlterStatement = "ALTER TABLE \"DB1\".\"SCHEMA2\".\"TABLE3\" \n" +
-                "ADD TRUEMAYBE BOOLEAN,\n" +
-                "ADD INT16MAYBE NUMBER";
+                "ADD INT16MAYBE NUMBER,\n" +
+                "ADD TRUEMAYBE BOOLEAN";
         verify(statement).executeUpdate(expectedAlterStatement);
         verify(connection).commit();
     }

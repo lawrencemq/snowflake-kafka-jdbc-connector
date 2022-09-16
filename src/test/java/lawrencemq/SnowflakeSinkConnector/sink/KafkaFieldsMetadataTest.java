@@ -1,10 +1,9 @@
 package lawrencemq.SnowflakeSinkConnector.sink;
 
-import lawrencemq.SnowflakeSinkConnector.sink.exceptions.RecordKeyTypeException;
+import lawrencemq.SnowflakeSinkConnector.sink.exceptions.*;
 import org.apache.kafka.connect.data.Field;
 import org.apache.kafka.connect.data.Schema;
 import org.apache.kafka.connect.data.SchemaBuilder;
-import org.apache.kafka.connect.errors.ConnectException;
 import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
@@ -14,17 +13,19 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class KafkaFieldsMetadataTest {
 
 
-    private static String TEST_TABLE_NAME = "\"db1\".\"schema2\".\"table3\"";
-    private static Schema keySchema = SchemaBuilder.struct()
+    private static final String TEST_TABLE_NAME = "\"db1\".\"schema2\".\"table3\"";
+    private static final Schema KEY_SCHEMA = SchemaBuilder.struct()
             .name("keySchema")
             .field("id", SchemaBuilder.STRING_SCHEMA)
             .build();
-    private static Schema valueSchema = SchemaBuilder.struct()
+    private static final Schema VALUE_SCHEMA = SchemaBuilder.struct()
             .name("valueSchema")
             .field("something", SchemaBuilder.string().build())
             .field("else", SchemaBuilder.OPTIONAL_INT16_SCHEMA)
@@ -47,9 +48,9 @@ class KafkaFieldsMetadataTest {
 
     @Test
     void testGetters() {
-        Set<String> keyFields = getFieldNamesFor(keySchema);
-        Set<String> valueFields = getFieldNamesFor(valueSchema);
-        Map<String, Schema> fieldsToSchemaMap = getMapOf(keySchema, valueSchema);
+        Set<String> keyFields = getFieldNamesFor(KEY_SCHEMA);
+        Set<String> valueFields = getFieldNamesFor(VALUE_SCHEMA);
+        Map<String, Schema> fieldsToSchemaMap = getMapOf(KEY_SCHEMA, VALUE_SCHEMA);
         KafkaFieldsMetadata metadata = new KafkaFieldsMetadata(keyFields, valueFields, fieldsToSchemaMap);
 
         assertSame(keyFields, metadata.getKeyFields());
@@ -61,30 +62,30 @@ class KafkaFieldsMetadataTest {
 
     @Test
     void extract() {
-        TopicSchemas topicSchemas = new TopicSchemas(keySchema, valueSchema);
+        TopicSchemas topicSchemas = new TopicSchemas(KEY_SCHEMA, VALUE_SCHEMA);
         KafkaFieldsMetadata metadata = KafkaFieldsMetadata.from(TEST_TABLE_NAME, topicSchemas);
 
         assertEquals(metadata.getAllFields().size(), 4);
-        assertEquals(new HashSet<>(metadata.getAllFieldNames()), getMapOf(keySchema, valueSchema).keySet());
-        assertEquals(metadata.getKeyFields(), getFieldNamesFor(keySchema));
-        assertEquals(metadata.getValueFields(), getFieldNamesFor(valueSchema));
+        assertEquals(new HashSet<>(metadata.getAllFieldNames()), getMapOf(KEY_SCHEMA, VALUE_SCHEMA).keySet());
+        assertEquals(metadata.getKeyFields(), getFieldNamesFor(KEY_SCHEMA));
+        assertEquals(metadata.getValueFields(), getFieldNamesFor(VALUE_SCHEMA));
     }
 
     @Test
     void extractWithNullKey() {
-        TopicSchemas topicSchemas = new TopicSchemas(null, valueSchema);
+        TopicSchemas topicSchemas = new TopicSchemas(null, VALUE_SCHEMA);
         KafkaFieldsMetadata metadata = KafkaFieldsMetadata.from(TEST_TABLE_NAME, topicSchemas);
 
         assertEquals(metadata.getAllFields().size(), 3);
-        assertEquals(new HashSet<>(metadata.getAllFieldNames()), getMapOf(valueSchema).keySet());
+        assertEquals(new HashSet<>(metadata.getAllFieldNames()), getMapOf(VALUE_SCHEMA).keySet());
         assertEquals(metadata.getKeyFields(), Set.of());
-        assertEquals(metadata.getValueFields(), getFieldNamesFor(valueSchema));
+        assertEquals(metadata.getValueFields(), getFieldNamesFor(VALUE_SCHEMA));
     }
 
 
     @Test
     void extractWithPrimitiveKey() {
-        TopicSchemas topicSchemas = new TopicSchemas(SchemaBuilder.STRING_SCHEMA, valueSchema);
+        TopicSchemas topicSchemas = new TopicSchemas(SchemaBuilder.STRING_SCHEMA, VALUE_SCHEMA);
         assertThrows(RecordKeyTypeException.class,
                 () -> KafkaFieldsMetadata.from(TEST_TABLE_NAME, topicSchemas),
                 "ensures key is null or struct");
@@ -92,16 +93,16 @@ class KafkaFieldsMetadataTest {
 
     @Test
     void extractErrorsWithValueNonStruct() {
-        TopicSchemas topicSchemas = new TopicSchemas(keySchema, Schema.STRING_SCHEMA);
-        assertThrows(ConnectException.class,
+        TopicSchemas topicSchemas = new TopicSchemas(KEY_SCHEMA, Schema.STRING_SCHEMA);
+        assertThrows(RecordValueTypeException.class,
                 () -> KafkaFieldsMetadata.from(TEST_TABLE_NAME, topicSchemas),
                 "Ensures value schema is a struct.");
     }
 
     @Test
     void extractErrorsWithValueStructNull() {
-        TopicSchemas topicSchemas = new TopicSchemas(keySchema, null);
-        assertThrows(ConnectException.class,
+        TopicSchemas topicSchemas = new TopicSchemas(KEY_SCHEMA, null);
+        assertThrows(RecordValueTypeException.class,
                 () -> KafkaFieldsMetadata.from(TEST_TABLE_NAME, topicSchemas),
                 "Ensures value schema is not null.");
     }
@@ -111,9 +112,9 @@ class KafkaFieldsMetadataTest {
         Schema emptyStructSchema = SchemaBuilder.struct().name("basicStruct").build();
         TopicSchemas topicSchemas = new TopicSchemas(emptyStructSchema, emptyStructSchema);
 
-        assertThrows(ConnectException.class,
+        assertThrows(InvalidColumnsError.class,
                 () -> KafkaFieldsMetadata.from(TEST_TABLE_NAME, topicSchemas),
-                "Ensures fields from structs exist");
+                "Ensures key and value has at least one field");
     }
 
     @Test
@@ -129,8 +130,7 @@ class KafkaFieldsMetadataTest {
                         .field("b", SchemaBuilder.STRING_SCHEMA)
                         .build());
 
-        // TODO, THIS ISN'T CURRENTLY FAILING. SHOULD IT? DID I MAKE AMISTAKE AND CREATE A BUG?
-        assertThrows(IllegalArgumentException.class,
+        assertThrows(InvalidColumnsError.class,
                 () -> KafkaFieldsMetadata.from(TEST_TABLE_NAME, topicSchemas),
                 "Ensures fields between key and value do not overlap");
     }
@@ -138,9 +138,9 @@ class KafkaFieldsMetadataTest {
 
     @Test
     void testToString() {
-        Set<String> keyFields = getFieldNamesFor(keySchema);
-        Set<String> valueFields = getFieldNamesFor(valueSchema);
-        Map<String, Schema> fieldsToSchemaMap = getMapOf(keySchema, valueSchema);
+        Set<String> keyFields = getFieldNamesFor(KEY_SCHEMA);
+        Set<String> valueFields = getFieldNamesFor(VALUE_SCHEMA);
+        Map<String, Schema> fieldsToSchemaMap = getMapOf(KEY_SCHEMA, VALUE_SCHEMA);
         KafkaFieldsMetadata metadata = new KafkaFieldsMetadata(keyFields, valueFields, fieldsToSchemaMap);
         assertEquals(metadata.toString(), "KafkaFieldsMetadata{keyFields=[id],valueFields=[else, entirely, something]}");
     }

@@ -1,16 +1,12 @@
 package lawrencemq.SnowflakeSinkConnector.sink;
 
 
-import lawrencemq.SnowflakeSinkConnector.sink.exceptions.RecordKeyTypeException;
-import org.apache.kafka.connect.data.Field;
+import lawrencemq.SnowflakeSinkConnector.sink.exceptions.*;
 import org.apache.kafka.connect.data.Schema;
-import org.apache.kafka.connect.errors.ConnectException;
 
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -53,81 +49,51 @@ public class KafkaFieldsMetadata {
         Schema valueSchema = topicSchemas.valueSchema();
 
         if (Objects.isNull(valueSchema) || valueSchema.type() != Schema.Type.STRUCT) {
-            throw new ConnectException("Value schema must be of type Struct");
+            throw new RecordValueTypeException("Value schema must be of type Struct");
         }
 
-        Map<String, Schema> allFields = new HashMap<>();
-        Set<String> keyFieldNames = extractKeyFields(keySchema, allFields);
 
-        Set<String> nonKeyFieldNames = new LinkedHashSet<>(); //TODO SHOULD I CHANGE THIS TO JUST AVLUES?
-        valueSchema.fields().stream()
-                .filter(field -> !keyFieldNames.contains(field.name()))
-                .forEach(field -> {
-                    nonKeyFieldNames.add(field.name());
-                    allFields.put(field.name(), field.schema());
-                });
+        if (Objects.nonNull(topicSchemas.keySchema())) {
+            Schema.Type type = topicSchemas.keySchema().type();
+            if (type != Schema.Type.STRUCT) {
+                throw new RecordKeyTypeException("Key schema must null or Struct, but is of type: " + type);
+            }
+        }
 
-        if (allFields.isEmpty()) {
-            throw new ConnectException(
+
+        Map<String, Schema> keyFieldToSchemaMap = extractFieldsFromSchema(keySchema);
+        Map<String, Schema> valueFieldToSchemaMap = extractFieldsFromSchema(valueSchema);
+
+        if (keyFieldToSchemaMap.isEmpty() && valueFieldToSchemaMap.isEmpty()) {
+            throw new InvalidColumnsError(
                     "No fields found using key and value schemas for table: " + tableName
             );
         }
 
+        Set<String> allFieldNames = new HashSet<>(keyFieldToSchemaMap.keySet());
+        allFieldNames.retainAll(valueFieldToSchemaMap.keySet());
+        if (!allFieldNames.isEmpty()) {
+            throw new InvalidColumnsError("Key and Value schemas have overlapping columns: " + String.join(", ", allFieldNames));
+        }
+
         LinkedHashMap<String, Schema> allFieldsOrdered = new LinkedHashMap<>();
+        allFieldsOrdered.putAll(keyFieldToSchemaMap);
+        allFieldsOrdered.putAll(valueFieldToSchemaMap);
 
-        for (Field field : valueSchema.fields()) {
-            String fieldName = field.name();
-            if (allFields.containsKey(fieldName)) {
-                allFieldsOrdered.put(fieldName, allFields.get(fieldName));
-            }
-        }
-
-        if (allFieldsOrdered.size() < allFields.size()) {
-            ArrayList<String> fieldKeys = new ArrayList<>(allFields.keySet());
-            Collections.sort(fieldKeys);
-            fieldKeys.stream()
-                    .filter(fieldName -> !allFieldsOrdered.containsKey(fieldName))
-                    .forEach(fieldName -> allFieldsOrdered.put(fieldName, allFields.get(fieldName)));
-        }
-
-        ensureInclusiveFields(keyFieldNames, nonKeyFieldNames, allFields, allFieldsOrdered);
-
-        return new KafkaFieldsMetadata(keyFieldNames, nonKeyFieldNames, allFieldsOrdered);
-    }
-
-    private static void ensureInclusiveFields(Set<String> keyFieldNames, Set<String> nonKeyFieldNames, Map<String, Schema> allFields, LinkedHashMap<String, Schema> allFieldsOrdered) {
-        boolean fieldCountsMatch = keyFieldNames.size() + nonKeyFieldNames.size() == allFields.size();
-        boolean allFieldsContained = allFieldsOrdered.keySet().containsAll(keyFieldNames)
-                && allFieldsOrdered.keySet().containsAll(nonKeyFieldNames);
-        if (!fieldCountsMatch || !allFieldsContained) {
-            throw new IllegalArgumentException(String.format(
-                    "Validation fail -- keyFieldNames:%s nonKeyFieldNames:%s allFields:%s",
-                    keyFieldNames, nonKeyFieldNames, allFieldsOrdered
-            ));
-        }
+        return new KafkaFieldsMetadata(keyFieldToSchemaMap.keySet(), valueFieldToSchemaMap.keySet(), allFieldsOrdered);
     }
 
 
-    private static Set<String> extractKeyFields(Schema keySchema, Map<String, Schema> allFields) {
-        Set<String> keyFieldNames = new LinkedHashSet<>();
-        if (Objects.isNull(keySchema)) {
-            return keyFieldNames;
+    private static Map<String, Schema> extractFieldsFromSchema(Schema schema) {
+        Map<String, Schema> fieldToSchemaMap = new LinkedHashMap<>();
+        if (Objects.isNull(schema)) {
+            return fieldToSchemaMap;
         }
 
-        Schema.Type keySchemaType = keySchema.type();
-        if (keySchema.type() != Schema.Type.STRUCT) {
-            throw new RecordKeyTypeException("Key schema must null or Struct, but is of type: " + keySchemaType);
-        }
+        schema.fields()
+                .forEach(field -> fieldToSchemaMap.put(field.name(), field.schema()));
 
-
-        keySchema.fields().stream()
-                .map(Field::name)
-                .forEach(keyFieldNames::add);
-
-        keyFieldNames.forEach(fieldName ->
-                allFields.put(fieldName, keySchema.field(fieldName).schema())
-        );
-        return keyFieldNames;
+        return fieldToSchemaMap;
     }
 
     @Override
