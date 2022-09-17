@@ -126,10 +126,6 @@ class TableManager {
         }
     }
 
-    void ensureTableExists(Connection connection) throws SQLException {
-        getLatestTableColumns(connection);
-    }
-
     private void create(Connection connection, KafkaFieldsMetadata kafkaFieldsMetadata) throws SQLException, TableAlterOrCreateException {
         if (!config.autoCreate) {
             throw new TableAlterOrCreateException(

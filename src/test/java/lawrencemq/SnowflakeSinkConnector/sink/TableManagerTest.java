@@ -10,10 +10,9 @@ import org.junit.jupiter.api.Test;
 
 import java.sql.*;
 import java.util.*;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static lawrencemq.SnowflakeSinkConnector.sink.SnowflakeSinkConnectorConfig.*;
+import static lawrencemq.SnowflakeSinkConnector.sink.TestData.TABLE;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -24,11 +23,6 @@ import static org.mockito.Mockito.when;
 class TableManagerTest {
 
 
-    private final static String DATABASE = "db1";
-    private final static String SCHEMA = "schema2";
-    private final static String TABLE_NAME = "table3";
-
-    private final static Table TABLE = new Table(DATABASE, SCHEMA, TABLE_NAME);
 
 
     private static final Schema KEY_SCHEMA = SchemaBuilder.struct()
@@ -61,35 +55,13 @@ class TableManagerTest {
     }
 
     private static SnowflakeSinkConnectorConfig genConfig() {
-        return genConfig(Map.of());
-    }
-
-    private static SnowflakeSinkConnectorConfig genConfig(Map<?, ?> properties) {
-        Map<?, ?> defaultConfigs = Map.of(
-                SNOWFLAKE_USER_NAME, "testUser",
-                SNOWFLAKE_PASSPHRASE, "butterCup123!",
-                SNOWFLAKE_ACCOUNT, "123456789",
-                SNOWFLAKE_WAREHOUSE, "testWH",
-                SNOWFLAKE_ROLE, "defaultRole",
-                SNOWFLAKE_DB, DATABASE,
-                SNOWFLAKE_SCHEMA, SCHEMA,
-                SNOWFLAKE_TABLE, TABLE_NAME
-        );
-
-
-        Map<?, ?> finalConfigs = Stream.of(defaultConfigs, properties)
-                .flatMap(map -> map.entrySet().stream())
-                .collect(Collectors.toMap(
-                        Map.Entry::getKey,
-                        Map.Entry::getValue
-                ));
-        return new SnowflakeSinkConnectorConfig(finalConfigs);
+        return TestData.genConfig(Map.of());
     }
 
     @Test
     void createTableFailsAutoCreateIsFalse() {
         Connection connection = mock(Connection.class);
-        SnowflakeSinkConnectorConfig config = genConfig(Map.of(AUTO_CREATE, false));
+        SnowflakeSinkConnectorConfig config = TestData.genConfig(Map.of(AUTO_CREATE, false));
         TableManager tableManager = new TableManager(config, TABLE) {
             @Override
             protected boolean tableExists(Connection connection, Table table) {
@@ -143,7 +115,7 @@ class TableManagerTest {
         LinkedHashSet<String> description = new LinkedHashSet<>();
         description.add("string");
 
-        SnowflakeSinkConnectorConfig config = genConfig(Map.of(AUTO_EVOLVE, false));
+        SnowflakeSinkConnectorConfig config = TestData.genConfig(Map.of(AUTO_EVOLVE, false));
         TableManager tableManager = new TableManager(config, TABLE) {
             @Override
             protected LinkedHashSet<String> getLatestTableColumns(Connection connection) {

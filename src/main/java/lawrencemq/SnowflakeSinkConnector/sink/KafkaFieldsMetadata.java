@@ -44,7 +44,7 @@ public class KafkaFieldsMetadata {
     }
 
 
-    public static KafkaFieldsMetadata from(String tableName, TopicSchemas topicSchemas) {
+    public static KafkaFieldsMetadata from(TopicSchemas topicSchemas) {
         Schema keySchema = topicSchemas.keySchema();
         Schema valueSchema = topicSchemas.valueSchema();
 
@@ -65,9 +65,7 @@ public class KafkaFieldsMetadata {
         Map<String, Schema> valueFieldToSchemaMap = extractFieldsFromSchema(valueSchema);
 
         if (keyFieldToSchemaMap.isEmpty() && valueFieldToSchemaMap.isEmpty()) {
-            throw new InvalidColumnsError(
-                    "No fields found using key and value schemas for table: " + tableName
-            );
+            throw new InvalidColumnsError("Key and value schemas were found to be empty.");
         }
 
         Set<String> allFieldNames = new HashSet<>(keyFieldToSchemaMap.keySet());

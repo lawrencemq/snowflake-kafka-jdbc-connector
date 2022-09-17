@@ -44,14 +44,17 @@ public class RecordBuffer {
     }
 
     private boolean hasSchemaChanged(SinkRecord record) {
+        boolean changed = false;
         if (!Objects.equals(keySchema, record.keySchema())) {
             keySchema = record.keySchema();
-            return true;
-        } else if (!Objects.equals(valueSchema, record.valueSchema())) {
-            valueSchema = record.valueSchema();
-            return true;
+            changed = true;
         }
-        return false;
+
+        if (!Objects.equals(valueSchema, record.valueSchema())) {
+            valueSchema = record.valueSchema();
+            changed = true;
+        }
+        return changed;
     }
 
     public List<SinkRecord> addAll(Collection<SinkRecord> records) throws SQLException, TableAlterOrCreateException, TableDoesNotExistException {
@@ -63,7 +66,7 @@ public class RecordBuffer {
         return flushed;
     }
 
-    public List<SinkRecord> add(SinkRecord record) throws SQLException, TableAlterOrCreateException, TableDoesNotExistException {
+    protected List<SinkRecord> add(SinkRecord record) throws SQLException, TableAlterOrCreateException, TableDoesNotExistException {
         List<SinkRecord> flushed = new ArrayList<>();
 
         boolean schemaChanged = hasSchemaChanged(record);
@@ -77,7 +80,7 @@ public class RecordBuffer {
                     record.keySchema(),
                     record.valueSchema()
             );
-            kafkaFieldsMetadata = KafkaFieldsMetadata.from(tableManager.getTable().getTableName(), topicSchemas);
+            kafkaFieldsMetadata = KafkaFieldsMetadata.from(topicSchemas);
             tableManager.createOrAmendTable(
                     connection,
                     kafkaFieldsMetadata
@@ -85,8 +88,6 @@ public class RecordBuffer {
             String insertSql = getInsertSql();
             log.debug("sql: {}  meta: {}", insertSql, kafkaFieldsMetadata);
             close();
-
-            tableManager.ensureTableExists(connection);
 
             insertPreparedStatement = connection.prepareStatement(insertSql);
             insertStatementBinder =  new QueryStatementBinder(
@@ -138,7 +139,7 @@ public class RecordBuffer {
         }
     }
 
-    private String getInsertSql() {
+    private String getInsertSql() { // TODO CAN THE COLUMN METADATA BE SIMPLIFIED?
         Collection<KafkaColumnMetadata> kafkaFieldsAsColumns = kafkaFieldsMetadata.getAllFieldNames().stream()
                 .map(name -> new KafkaColumnMetadata(name, kafkaFieldsMetadata.getAllFields().get(name)))
                 .collect(Collectors.toList());

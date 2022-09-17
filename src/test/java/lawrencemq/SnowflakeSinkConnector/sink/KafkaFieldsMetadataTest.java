@@ -61,7 +61,7 @@ class KafkaFieldsMetadataTest {
     @Test
     void extract() {
         TopicSchemas topicSchemas = new TopicSchemas(KEY_SCHEMA, VALUE_SCHEMA);
-        KafkaFieldsMetadata metadata = KafkaFieldsMetadata.from(TEST_TABLE_NAME, topicSchemas);
+        KafkaFieldsMetadata metadata = KafkaFieldsMetadata.from(topicSchemas);
 
         assertEquals(metadata.getAllFields().size(), 4);
         assertEquals(new HashSet<>(metadata.getAllFieldNames()), getMapOf(KEY_SCHEMA, VALUE_SCHEMA).keySet());
@@ -72,7 +72,7 @@ class KafkaFieldsMetadataTest {
     @Test
     void extractWithNullKey() {
         TopicSchemas topicSchemas = new TopicSchemas(null, VALUE_SCHEMA);
-        KafkaFieldsMetadata metadata = KafkaFieldsMetadata.from(TEST_TABLE_NAME, topicSchemas);
+        KafkaFieldsMetadata metadata = KafkaFieldsMetadata.from(topicSchemas);
 
         assertEquals(metadata.getAllFields().size(), 3);
         assertEquals(new HashSet<>(metadata.getAllFieldNames()), getMapOf(VALUE_SCHEMA).keySet());
@@ -85,7 +85,7 @@ class KafkaFieldsMetadataTest {
     void extractWithPrimitiveKey() {
         TopicSchemas topicSchemas = new TopicSchemas(SchemaBuilder.STRING_SCHEMA, VALUE_SCHEMA);
         assertThrows(RecordKeyTypeException.class,
-                () -> KafkaFieldsMetadata.from(TEST_TABLE_NAME, topicSchemas),
+                () -> KafkaFieldsMetadata.from(topicSchemas),
                 "ensures key is null or struct");
     }
 
@@ -93,7 +93,7 @@ class KafkaFieldsMetadataTest {
     void extractErrorsWithValueNonStruct() {
         TopicSchemas topicSchemas = new TopicSchemas(KEY_SCHEMA, Schema.STRING_SCHEMA);
         assertThrows(RecordValueTypeException.class,
-                () -> KafkaFieldsMetadata.from(TEST_TABLE_NAME, topicSchemas),
+                () -> KafkaFieldsMetadata.from(topicSchemas),
                 "Ensures value schema is a struct.");
     }
 
@@ -101,7 +101,7 @@ class KafkaFieldsMetadataTest {
     void extractErrorsWithValueStructNull() {
         TopicSchemas topicSchemas = new TopicSchemas(KEY_SCHEMA, null);
         assertThrows(RecordValueTypeException.class,
-                () -> KafkaFieldsMetadata.from(TEST_TABLE_NAME, topicSchemas),
+                () -> KafkaFieldsMetadata.from(topicSchemas),
                 "Ensures value schema is not null.");
     }
 
@@ -111,7 +111,7 @@ class KafkaFieldsMetadataTest {
         TopicSchemas topicSchemas = new TopicSchemas(emptyStructSchema, emptyStructSchema);
 
         assertThrows(InvalidColumnsError.class,
-                () -> KafkaFieldsMetadata.from(TEST_TABLE_NAME, topicSchemas),
+                () -> KafkaFieldsMetadata.from(topicSchemas),
                 "Ensures key and value has at least one field");
     }
 
@@ -129,7 +129,7 @@ class KafkaFieldsMetadataTest {
                         .build());
 
         assertThrows(InvalidColumnsError.class,
-                () -> KafkaFieldsMetadata.from(TEST_TABLE_NAME, topicSchemas),
+                () -> KafkaFieldsMetadata.from(topicSchemas),
                 "Ensures fields between key and value do not overlap");
     }
 
