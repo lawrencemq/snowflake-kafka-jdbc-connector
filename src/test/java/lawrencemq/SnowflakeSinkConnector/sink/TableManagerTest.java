@@ -1,5 +1,6 @@
 package lawrencemq.SnowflakeSinkConnector.sink;
 
+import lawrencemq.SnowflakeSinkConnector.*;
 import lawrencemq.SnowflakeSinkConnector.sink.exceptions.InvalidColumnsError;
 import lawrencemq.SnowflakeSinkConnector.sink.exceptions.TableAlterOrCreateException;
 import lawrencemq.SnowflakeSinkConnector.sql.Table;
@@ -12,7 +13,7 @@ import java.sql.*;
 import java.util.*;
 
 import static lawrencemq.SnowflakeSinkConnector.sink.SnowflakeSinkConnectorConfig.*;
-import static lawrencemq.SnowflakeSinkConnector.sink.TestData.TABLE;
+import static lawrencemq.SnowflakeSinkConnector.TestData.TABLE;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -21,9 +22,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class TableManagerTest {
-
-
-
 
     private static final Schema KEY_SCHEMA = SchemaBuilder.struct()
             .name("keySchema")

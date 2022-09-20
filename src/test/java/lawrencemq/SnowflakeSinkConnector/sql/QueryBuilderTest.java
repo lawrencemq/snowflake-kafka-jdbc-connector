@@ -1,14 +1,11 @@
 package lawrencemq.SnowflakeSinkConnector.sql;
 
-import lawrencemq.SnowflakeSinkConnector.sink.KafkaColumnMetadata;
 import org.apache.kafka.connect.data.Schema;
 import org.apache.kafka.connect.data.SchemaBuilder;
 import org.junit.jupiter.api.Test;
 
-import java.util.List;
+import java.util.*;
 
-import static org.apache.kafka.connect.data.Schema.*;
-import static org.apache.kafka.connect.data.Schema.OPTIONAL_INT64_SCHEMA;
 import static org.junit.jupiter.api.Assertions.*;
 
 class QueryBuilderTest {
@@ -48,20 +45,22 @@ class QueryBuilderTest {
     @Test
     void appendColumns() {
 
+        LinkedHashMap<String, Schema> fieldToSchemaMap = new LinkedHashMap<>();
+        fieldToSchemaMap.put("floatName", SchemaBuilder.float32().name("floatName").defaultValue(42.69F).build());
+        fieldToSchemaMap.put("strName", SchemaBuilder.string().name("strName").optional().build());
+
         // Adding all at once
-        KafkaColumnMetadata floatColumn = new KafkaColumnMetadata("floatName", SchemaBuilder.float32().name("floatName").defaultValue(42.69F).build());
-        KafkaColumnMetadata strColumn = new KafkaColumnMetadata("strName", SchemaBuilder.string().name("strName").optional().build());
         String result = QueryBuilder.newQuery()
-                .appendColumns(List.of(floatColumn, strColumn))
+                .appendColumns(fieldToSchemaMap)
                 .toString();
 
         assertEquals(result, "\nFLOATNAME,\nSTRNAME");
 
         // Adding one at a time
         String result2 = QueryBuilder.newQuery()
-                .appendColumn(floatColumn)
+                .appendColumnName("floatName")
                 .append(", ")
-                .appendColumn(strColumn)
+                .appendColumnName("strName")
                 .toString();
         assertEquals(result2, "FLOATNAME, STRNAME");
 

@@ -1,39 +1,26 @@
 package lawrencemq.SnowflakeSinkConnector.sql;
 
-import lawrencemq.SnowflakeSinkConnector.sink.KafkaColumnMetadata;
 import org.apache.kafka.connect.data.Schema;
 import org.apache.kafka.connect.data.SchemaBuilder;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.util.Collection;
-import java.util.List;
+import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 class SnowflakeSqlTest {
 
     private static Table TABLE = new Table("db1", "schema1", "table1");
 
 
-       @Test
+    @Test
     void buildInsertStatement() {
-        List<KafkaColumnMetadata> columnsFromKafka = List.of(
-                new KafkaColumnMetadata("robot_id", SchemaBuilder.INT16_SCHEMA),
-                new KafkaColumnMetadata("robot_loc", SchemaBuilder.map(Schema.STRING_SCHEMA, Schema.STRING_SCHEMA).build())
-        );
+        LinkedHashMap<String, Schema> fieldsToSchemaMap = new LinkedHashMap<>();
+        fieldsToSchemaMap.put("robot_id", SchemaBuilder.INT16_SCHEMA);
+        fieldsToSchemaMap.put("robot_loc", SchemaBuilder.map(Schema.STRING_SCHEMA, Schema.STRING_SCHEMA).build());
 
-        String result = SnowflakeSql.buildInsertStatement(TABLE, columnsFromKafka);
+        String result = SnowflakeSql.buildInsertStatement(TABLE, fieldsToSchemaMap);
         assertEquals(result, "INSERT INTO \"DB1\".\"SCHEMA1\".\"TABLE1\"(\nROBOT_ID,\nROBOT_LOC) SELECT ?,parse_json(?)\n");
 
     }

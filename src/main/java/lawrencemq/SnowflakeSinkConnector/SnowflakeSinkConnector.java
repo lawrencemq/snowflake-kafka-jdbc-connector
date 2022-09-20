@@ -35,7 +35,7 @@ public class SnowflakeSinkConnector extends SinkConnector {
     @Override
     public List<Map<String, String>> taskConfigs(int maxTasks) {
         log.info("Creating {} workers.", maxTasks);
-        return IntStream.of(maxTasks)
+        return IntStream.range(0, maxTasks)
                 .mapToObj(i -> configProps)
                 .collect(Collectors.toList());
     }
@@ -53,7 +53,7 @@ public class SnowflakeSinkConnector extends SinkConnector {
         // https://docs.snowflake.com/en/user-guide/jdbc-configure.html
 
         // todo add in optional parameters to the config, check that they're fine
-
+        //ConnectException
 
         return config;
     }

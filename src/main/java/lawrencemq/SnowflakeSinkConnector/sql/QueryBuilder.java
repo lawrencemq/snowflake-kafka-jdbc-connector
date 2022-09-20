@@ -1,11 +1,9 @@
 package lawrencemq.SnowflakeSinkConnector.sql;
 
 
-import lawrencemq.SnowflakeSinkConnector.sink.KafkaColumnMetadata;
 import org.apache.kafka.connect.data.Schema;
 
-import java.util.Collection;
-import java.util.Objects;
+import java.util.*;
 
 import static java.util.Objects.nonNull;
 import static lawrencemq.SnowflakeSinkConnector.sql.AvroSnowflakeConverter.formatColumnValue;
@@ -15,7 +13,6 @@ import static lawrencemq.SnowflakeSinkConnector.sql.QueryUtils.bytesToHex;
 final class QueryBuilder {
     private final StringBuilder sb = new StringBuilder();
 
-    //    private static final String DEFAULT_QUOTE = "\"";
     static QueryBuilder newQuery() {
         return new QueryBuilder();
     }
@@ -58,19 +55,19 @@ final class QueryBuilder {
         return this;
     }
 
-    QueryBuilder appendColumns(Collection<KafkaColumnMetadata> fields) {
-        Transform<KafkaColumnMetadata> transform = (field) -> {
-            append(System.lineSeparator()).appendColumn(field);
+    QueryBuilder appendColumns(LinkedHashMap<String, Schema> fieldsToSchemaMap) {
+        Transform<String> transform = (field) -> {
+            append(System.lineSeparator()).appendColumnName(field);
         };
 
         appendList()
                 .withTransformation(transform)
-                .withItems(fields);
+                .withItems(fieldsToSchemaMap.keySet());
         return this;
     }
 
-    QueryBuilder appendColumn(KafkaColumnMetadata column) {
-        append(convertColumnName(column.getColumnName()));
+    QueryBuilder appendColumnName(String columnName) {
+        append(convertColumnName(columnName));
         return this;
     }
 

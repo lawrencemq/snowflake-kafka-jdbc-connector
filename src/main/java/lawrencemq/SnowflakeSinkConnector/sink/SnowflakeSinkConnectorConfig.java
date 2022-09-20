@@ -20,7 +20,6 @@ public class SnowflakeSinkConnectorConfig extends AbstractConfig {
     public static final String SNOWFLAKE_PASSPHRASE = "snowflake.passphrase";
     public static final String SNOWFLAKE_MAX_RETRIES = "snowflake.max.retries";
     public static final String SNOWFLAKE_RETRY_BACKOFF_MS = "snowflake.retry.backoffMs";
-    //    public static final String SNOWFLAKE_RETRY_ATTEMPTS = "snowflake.retry.attempts";
     public static final String BATCH_SIZE = "batch.size";
     public static final String AUTO_CREATE = "auto.create";
     public static final String AUTO_EVOLVE = "auto.evolve";

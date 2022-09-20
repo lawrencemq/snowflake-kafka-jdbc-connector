@@ -1,24 +1,23 @@
 package lawrencemq.SnowflakeSinkConnector.sql;
 
 
-import lawrencemq.SnowflakeSinkConnector.sink.KafkaColumnMetadata;
 import org.apache.kafka.connect.data.Schema;
 
-import java.util.Collection;
+import java.util.*;
 import java.util.stream.Collectors;
 
 
 public final class SnowflakeSql {
 
-    public static String buildInsertStatement(Table table, Collection<KafkaColumnMetadata> columns) {
-        String questionMarks = columns.stream()
-                .map(column -> column.getKafkaSchema().type().isPrimitive() ? "?" : "parse_json(?)")
+    public static String buildInsertStatement(Table table, LinkedHashMap<String, Schema> kafkaFieldToSchemaMap) {
+        String questionMarks = kafkaFieldToSchemaMap.values().stream()
+                .map(schema -> schema.type().isPrimitive() ? "?" : "parse_json(?)")
                 .collect(Collectors.joining(","));
 
         return QueryBuilder.newQuery().append("INSERT INTO ")
                 .append(table)
                 .append("(")
-                .appendColumns(columns)
+                .appendColumns(kafkaFieldToSchemaMap)
                 .append(") SELECT ")
                 .append(questionMarks)
                 .append(System.lineSeparator())

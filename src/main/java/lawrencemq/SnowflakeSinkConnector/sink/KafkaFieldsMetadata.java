@@ -33,7 +33,7 @@ public class KafkaFieldsMetadata {
         return valueFields;
     }
 
-    public Map<String, Schema> getAllFields() {
+    public LinkedHashMap<String, Schema> getAllFields() {
         return allFields;
     }
 

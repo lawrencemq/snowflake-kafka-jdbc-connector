@@ -10,13 +10,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.sql.SQLException;
-import java.util.Collection;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 
 import static lawrencemq.SnowflakeSinkConnector.sink.Utils.getVersion;
 
-public final class SnowflakeSinkTask extends SinkTask {
+public class SnowflakeSinkTask extends SinkTask {
 
     private static final Logger log = LoggerFactory.getLogger(SnowflakeSinkTask.class);
 
@@ -39,7 +37,7 @@ public final class SnowflakeSinkTask extends SinkTask {
 
     }
 
-    void createWriter() {
+    protected void createWriter() {
         ConnectionManager connectionManager = new ConnectionManager(config);
 
         Table destinationTable = new Table(config.db, config.schema, config.table);
@@ -55,34 +53,33 @@ public final class SnowflakeSinkTask extends SinkTask {
 
     @Override
     public void put(Collection<SinkRecord> records) {
-        if (records.isEmpty()) {
-            return;
-        }
-
         log.debug("Received {} records.", records.size());
 
-        try {
-            writer.write(records);
-        } catch (SQLException e) {
-            log.warn("Write of {} records failed, remainingRetries: {}", records.size(), remainingRetries);
-            int totalExceptions = 0;
-            for (Throwable t : e) {
-                totalExceptions++;
-            }
-            SQLException sqlAllMessagesException = getAllMessagesException(e);
-            if (remainingRetries > 0) {
-                writer.close();
-                createWriter();
+        if (!records.isEmpty()) {
+            try {
+                writer.write(records);
+                remainingRetries = config.maxRetries;
+            } catch (SQLException e) {
+                log.warn("Write of {} records failed, remainingRetries: {}", records.size(), remainingRetries);
+                SQLException sqlAllMessagesException = getAllMessagesException(e);
+                if (remainingRetries == 0) {
+                    log.error("Failing task. Max retries reached.");
+                    throw new ConnectException(sqlAllMessagesException);
+                }
+
+                recreateWriter();
                 remainingRetries--;
-                context.timeout(config.retryBackoffMs); // TODO I MAY HAVE THE WRONG VARIABLE HERE
+                if(Objects.nonNull(context)) {
+                    context.timeout(config.retryBackoffMs);
+                }
                 throw new RetriableException(sqlAllMessagesException);
-            } else {
-                log.error("Failing task. Max retries reached. Number of exceptions on last write attempt: {}.", totalExceptions);
-                log.debug("%s", e);
-                throw new ConnectException(sqlAllMessagesException);
             }
         }
-        remainingRetries = config.maxRetries;
+    }
+
+    private void recreateWriter() {
+        writer.close();
+        createWriter();
     }
 
     private SQLException getAllMessagesException(SQLException e) {
@@ -98,8 +95,6 @@ public final class SnowflakeSinkTask extends SinkTask {
     @Override
     public void stop() {
         log.info("Stopping task");
-        if (Objects.nonNull(writer)) {
-            writer.close();
-        }
+        writer.close();
     }
 }

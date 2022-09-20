@@ -1,8 +1,8 @@
 package lawrencemq.SnowflakeSinkConnector.sink;
 
 
+import lawrencemq.SnowflakeSinkConnector.sink.exceptions.RecordValidationException;
 import org.apache.kafka.connect.data.Schema;
-import org.apache.kafka.connect.errors.ConnectException;
 import org.apache.kafka.connect.sink.SinkRecord;
 
 import java.util.Objects;
@@ -23,7 +23,7 @@ final class RecordValidator {
         if (Objects.nonNull(key) && Objects.nonNull(keySchema) && keySchema.type() == Schema.Type.STRUCT) {
             return;
         }
-        throw new ConnectException(
+        throw new RecordValidationException(
                 String.format(
                         "Snowflake sink connector requires " +
                                 "records to have null keys or non-null Avro Struct keys and schemas. " +
@@ -45,7 +45,7 @@ final class RecordValidator {
         if (Objects.nonNull(value) && Objects.nonNull(valueSchema) && valueSchema.type() == Schema.Type.STRUCT) {
             return;
         }
-        throw new ConnectException(
+        throw new RecordValidationException(
                 String.format(
                         "Snowflake sink connector requires " +
                                 "records to have non-null Avro Struct values and schemas. " +

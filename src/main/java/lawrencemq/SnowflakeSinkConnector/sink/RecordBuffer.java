@@ -58,7 +58,6 @@ public class RecordBuffer {
     }
 
     public List<SinkRecord> addAll(Collection<SinkRecord> records) throws SQLException, TableAlterOrCreateException, TableDoesNotExistException {
-        records.forEach(RecordValidator::validate);
         List<SinkRecord> flushed = new ArrayList<>();
         for (SinkRecord record : records) {
             flushed.addAll(add(record));
@@ -67,6 +66,7 @@ public class RecordBuffer {
     }
 
     protected List<SinkRecord> add(SinkRecord record) throws SQLException, TableAlterOrCreateException, TableDoesNotExistException {
+        RecordValidator.validate(record);
         List<SinkRecord> flushed = new ArrayList<>();
 
         boolean schemaChanged = hasSchemaChanged(record);
@@ -85,12 +85,12 @@ public class RecordBuffer {
                     connection,
                     kafkaFieldsMetadata
             );
-            String insertSql = getInsertSql();
+            String insertSql = SnowflakeSql.buildInsertStatement(tableManager.getTable(), kafkaFieldsMetadata.getAllFields());
             log.debug("sql: {}  meta: {}", insertSql, kafkaFieldsMetadata);
             close();
 
             insertPreparedStatement = connection.prepareStatement(insertSql);
-            insertStatementBinder =  new QueryStatementBinder(
+            insertStatementBinder = new QueryStatementBinder(
                     insertPreparedStatement,
                     topicSchemas,
                     kafkaFieldsMetadata
@@ -138,13 +138,5 @@ public class RecordBuffer {
             insertPreparedStatement = null;
         }
     }
-
-    private String getInsertSql() { // TODO CAN THE COLUMN METADATA BE SIMPLIFIED?
-        Collection<KafkaColumnMetadata> kafkaFieldsAsColumns = kafkaFieldsMetadata.getAllFieldNames().stream()
-                .map(name -> new KafkaColumnMetadata(name, kafkaFieldsMetadata.getAllFields().get(name)))
-                .collect(Collectors.toList());
-        return SnowflakeSql.buildInsertStatement(tableManager.getTable(), kafkaFieldsAsColumns);
-    }
-
 
 }

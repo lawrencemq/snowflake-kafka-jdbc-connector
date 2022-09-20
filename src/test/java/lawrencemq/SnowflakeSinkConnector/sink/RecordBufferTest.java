@@ -1,5 +1,6 @@
 package lawrencemq.SnowflakeSinkConnector.sink;
 
+import lawrencemq.SnowflakeSinkConnector.sink.exceptions.*;
 import org.apache.kafka.connect.data.*;
 import org.apache.kafka.connect.data.Struct;
 import org.apache.kafka.connect.sink.*;
@@ -10,7 +11,7 @@ import java.util.*;
 import java.util.stream.*;
 
 import static lawrencemq.SnowflakeSinkConnector.sink.SnowflakeSinkConnectorConfig.BATCH_SIZE;
-import static lawrencemq.SnowflakeSinkConnector.sink.TestData.genConfig;
+import static lawrencemq.SnowflakeSinkConnector.TestData.genConfig;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
@@ -47,21 +48,24 @@ class RecordBufferTest {
             .field("ageStr", SchemaBuilder.string().name("ageStr").optional().build())
             .field("address", SchemaBuilder.string().name("address").optional().build())
             .build();
-    private Random random = new Random();
+    private static Random random = new Random();
 
 
-    private SinkRecord createSinkRecord(Schema keySchema, Struct key, Schema valueSchema, Struct value, long kafkaOffset){
+    private static SinkRecord createSinkRecord(Schema keySchema, Struct key, Schema valueSchema, Struct value, long kafkaOffset){
         return new SinkRecord(TOPIC, PARTITION, keySchema, key, valueSchema, value, kafkaOffset);
     }
 
-    private Struct createStruct(Schema schema, Map<String, ?> record){
+    private static Struct createStruct(Schema schema, Map<String, ?> record){
         Struct struct = new Struct(schema);
         record.forEach(struct::put);
         struct.validate();
         return struct;
     }
 
-    private List<SinkRecord> generateMessages(Schema valueSchema, int numMessages){
+    public static List<SinkRecord> generateMessages(int numMessages){
+        return generateMessages(EARLY_VALUE_SCHEMA, numMessages);
+    }
+    private static List<SinkRecord> generateMessages(Schema valueSchema, int numMessages){
         return IntStream.range(0, numMessages).mapToObj(i -> {
 
             Struct keyStruct = createStruct(KEY_SCHEMA, Map.of("id", String.format("id-%d", i)));
@@ -72,12 +76,11 @@ class RecordBufferTest {
             });
             Struct valueStruct = createStruct(valueSchema, valueMap);
 
-            random = new Random();
             return createSinkRecord(KEY_SCHEMA, keyStruct, valueSchema, valueStruct, random.nextLong());
         }).collect(Collectors.toList());
     }
 
-    private  static <T> List<T>[] split(List<T> list){
+    private static <T> List<T>[] split(List<T> list){
         int midIndex = (list.size() - 1) / 2;
 
         List<List<T>> lists = new ArrayList<>(
@@ -250,5 +253,66 @@ class RecordBufferTest {
 
         buffer.close();
         verify(preparedStatement, times(1)).close();
+    }
+
+    @Test
+    void throwsErrorIfKeySchemaInvalid() throws SQLException {
+        TableManager tableManager = mock(TableManager.class);
+        Connection connection = mock(Connection.class);
+        Statement statement = mock(Statement.class);
+        when(connection.createStatement()).thenReturn(statement);
+
+
+        String defaultKeyId = "id_509837228384987";
+        Schema keySchema = SchemaBuilder.string()
+                .name("keySchema")
+                .defaultValue(defaultKeyId)
+                .build();
+
+        Struct value = new Struct(EARLY_VALUE_SCHEMA);
+        value.put("firstName", "Testy");
+        value.put("lastName", "McTestface");
+        value.put("ageStr", "42");
+        value.validate();;
+
+
+        SinkRecord recordWithStrId = new SinkRecord(TOPIC, PARTITION, keySchema, defaultKeyId, EARLY_VALUE_SCHEMA, value, 123L);
+        SinkRecord recordWithMissingId = new SinkRecord(TOPIC, PARTITION, KEY_SCHEMA, null, EARLY_VALUE_SCHEMA, value, 124L);
+
+        RecordBuffer buffer = new RecordBuffer(genConfig(), tableManager, connection);
+        assertThrows(RecordValidationException.class,
+                () -> buffer.add(recordWithStrId),
+                "Key must be a struct");
+        assertThrows(RecordValidationException.class,
+                () -> buffer.add(recordWithMissingId),
+                "If key is a struct, value must not be missing");
+    }
+
+    @Test
+    void throwsErrorIfValueSchemaInvalid() throws SQLException {
+        TableManager tableManager = mock(TableManager.class);
+        Connection connection = mock(Connection.class);
+        Statement statement = mock(Statement.class);
+        when(connection.createStatement()).thenReturn(statement);
+
+
+        String defaultValueId = "id_509837228384987";
+        Schema valueSchema = SchemaBuilder.string()
+                .name("valueSchema")
+                .defaultValue(defaultValueId)
+                .build();
+
+
+
+        SinkRecord recordWithStrVal = new SinkRecord(TOPIC, PARTITION, null, null, valueSchema, "id_1092", 123L);
+        SinkRecord recordWithMissingVal = new SinkRecord(TOPIC, PARTITION, null, null, EARLY_VALUE_SCHEMA, null, 124L);
+
+        RecordBuffer buffer = new RecordBuffer(genConfig(), tableManager, connection);
+        assertThrows(RecordValidationException.class,
+                () -> buffer.add(recordWithStrVal),
+                "Value must be a struct");
+        assertThrows(RecordValidationException.class,
+                () -> buffer.add(recordWithMissingVal),
+                "If value is a struct, value must not be missing");
     }
 }

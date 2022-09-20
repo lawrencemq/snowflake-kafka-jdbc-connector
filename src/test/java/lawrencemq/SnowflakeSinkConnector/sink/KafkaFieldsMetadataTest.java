@@ -6,7 +6,11 @@ import org.apache.kafka.connect.data.Schema;
 import org.apache.kafka.connect.data.SchemaBuilder;
 import org.junit.jupiter.api.Test;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -16,7 +20,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 class KafkaFieldsMetadataTest {
 
 
-    private static final String TEST_TABLE_NAME = "\"db1\".\"schema2\".\"table3\"";
     private static final Schema KEY_SCHEMA = SchemaBuilder.struct()
             .name("keySchema")
             .field("id", SchemaBuilder.STRING_SCHEMA)

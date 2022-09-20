@@ -1,5 +1,6 @@
-package lawrencemq.SnowflakeSinkConnector.sink;
+package lawrencemq.SnowflakeSinkConnector;
 
+import lawrencemq.SnowflakeSinkConnector.sink.*;
 import lawrencemq.SnowflakeSinkConnector.sql.*;
 
 import java.util.*;
@@ -16,29 +17,28 @@ import static lawrencemq.SnowflakeSinkConnector.sink.SnowflakeSinkConnectorConfi
 
 public class TestData {
 
-    final static String DATABASE = "db1";
-    final static String SCHEMA = "schema2";
-    final static String TABLE_NAME = "table3";
+    final public static String DATABASE = "db1";
+    final public static String SCHEMA = "schema2";
+    final public static String TABLE_NAME = "table3";
 
-    final static Table TABLE = new Table(DATABASE, SCHEMA, TABLE_NAME);
+    final public static Table TABLE = new Table(DATABASE, SCHEMA, TABLE_NAME);
+    final public static Map<String, String> DEFAULT_CONFIGS = Map.of(
+            SNOWFLAKE_USER_NAME, "testUser",
+            SNOWFLAKE_PASSPHRASE, "butterCup123!",
+            SNOWFLAKE_ACCOUNT, "123456789",
+            SNOWFLAKE_WAREHOUSE, "testWH",
+            SNOWFLAKE_ROLE, "defaultRole",
+            SNOWFLAKE_DB, DATABASE,
+            SNOWFLAKE_SCHEMA, SCHEMA,
+            SNOWFLAKE_TABLE, TABLE_NAME
+    );
 
-    static SnowflakeSinkConnectorConfig genConfig() {
+    public static SnowflakeSinkConnectorConfig genConfig() {
         return genConfig(Map.of());
     }
-    static SnowflakeSinkConnectorConfig genConfig(Map<?, ?> properties) {
-        Map<?, ?> defaultConfigs = Map.of(
-                SNOWFLAKE_USER_NAME, "testUser",
-                SNOWFLAKE_PASSPHRASE, "butterCup123!",
-                SNOWFLAKE_ACCOUNT, "123456789",
-                SNOWFLAKE_WAREHOUSE, "testWH",
-                SNOWFLAKE_ROLE, "defaultRole",
-                SNOWFLAKE_DB, DATABASE,
-                SNOWFLAKE_SCHEMA, SCHEMA,
-                SNOWFLAKE_TABLE, TABLE_NAME
-        );
 
-
-        Map<?, ?> finalConfigs = Stream.of(defaultConfigs, properties)
+    public static SnowflakeSinkConnectorConfig genConfig(Map<?, ?> properties) {
+        Map<?, ?> finalConfigs = Stream.of(DEFAULT_CONFIGS, properties)
                 .flatMap(map -> map.entrySet().stream())
                 .collect(Collectors.toMap(
                         Map.Entry::getKey,

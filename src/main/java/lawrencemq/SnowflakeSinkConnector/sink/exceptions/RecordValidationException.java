@@ -2,8 +2,8 @@ package lawrencemq.SnowflakeSinkConnector.sink.exceptions;
 
 import org.apache.kafka.connect.errors.ConnectException;
 
-public class InvalidColumnsError extends ConnectException {
-    public InvalidColumnsError(String message) {
+public class RecordValidationException extends ConnectException {
+    public RecordValidationException(String message) {
         super(message);
     }
 }
