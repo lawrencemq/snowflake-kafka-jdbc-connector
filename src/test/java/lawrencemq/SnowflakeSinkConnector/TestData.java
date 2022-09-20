@@ -8,7 +8,7 @@ import java.util.stream.*;
 
 import static lawrencemq.SnowflakeSinkConnector.sink.SnowflakeSinkConnectorConfig.SNOWFLAKE_ACCOUNT;
 import static lawrencemq.SnowflakeSinkConnector.sink.SnowflakeSinkConnectorConfig.SNOWFLAKE_DB;
-import static lawrencemq.SnowflakeSinkConnector.sink.SnowflakeSinkConnectorConfig.SNOWFLAKE_PASSPHRASE;
+import static lawrencemq.SnowflakeSinkConnector.sink.SnowflakeSinkConnectorConfig.SNOWFLAKE_PRIVATE_KEY_FILE_PASSPHRASE;
 import static lawrencemq.SnowflakeSinkConnector.sink.SnowflakeSinkConnectorConfig.SNOWFLAKE_ROLE;
 import static lawrencemq.SnowflakeSinkConnector.sink.SnowflakeSinkConnectorConfig.SNOWFLAKE_SCHEMA;
 import static lawrencemq.SnowflakeSinkConnector.sink.SnowflakeSinkConnectorConfig.SNOWFLAKE_TABLE;
@@ -24,7 +24,7 @@ public class TestData {
     final public static Table TABLE = new Table(DATABASE, SCHEMA, TABLE_NAME);
     final public static Map<String, String> DEFAULT_CONFIGS = Map.of(
             SNOWFLAKE_USER_NAME, "testUser",
-            SNOWFLAKE_PASSPHRASE, "butterCup123!",
+            SNOWFLAKE_PRIVATE_KEY_FILE_PASSPHRASE, "butterCup123!",
             SNOWFLAKE_ACCOUNT, "123456789",
             SNOWFLAKE_WAREHOUSE, "testWH",
             SNOWFLAKE_ROLE, "defaultRole",

@@ -44,18 +44,8 @@ class SnowflakeSinkConnectorTest {
     }
 
     @Test
-    void validationPassesWithGoodConfigs() {
+    void validate() {
         assertNotNull(connector.validate(DEFAULT_CONFIGS));
-    }
-
-    @Test
-    void validationThrowsIfUsernameNoPassword(){
-    //todo
-    }
-
-    @Test
-    void validationThorwsIfUsernameNoPrivateKey(){
-    //todo
     }
 
     @Test

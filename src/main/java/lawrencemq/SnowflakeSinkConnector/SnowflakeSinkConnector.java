@@ -49,12 +49,6 @@ public class SnowflakeSinkConnector extends SinkConnector {
     public Config validate(Map<String, String> connectorConfigs) {
         Config config = super.validate(connectorConfigs);
 
-        // TODO NEED TO CHECK THAT USERNAME+PASS OR USERNAME + PRIVATE KEY (AND MAYBE PRIVATE PASS) ARE GIVEN. OTHERWISE ERROR
-        // https://docs.snowflake.com/en/user-guide/jdbc-configure.html
-
-        // todo add in optional parameters to the config, check that they're fine
-        //ConnectException
-
         return config;
     }
 

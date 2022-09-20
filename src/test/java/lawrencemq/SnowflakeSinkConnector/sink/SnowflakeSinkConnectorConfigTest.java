@@ -14,7 +14,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 class SnowflakeSinkConnectorConfigTest {
 
-    Properties createDefaultConfig(){
+    Properties createDefaultConfig() {
         Properties props = new Properties();
         props.put("snowflake.username", "testName");
         props.put("snowflake.account", "12345");
@@ -45,7 +45,7 @@ class SnowflakeSinkConnectorConfigTest {
                 "snowflake.schema",
                 "snowflake.table",
                 "snowflake.private.key.filename",
-                "snowflake.passphrase",
+                "snowflake.private.key.passphrase",
                 "snowflake.max.retries",
                 "snowflake.retry.backoffMs",
                 "batch.size",
@@ -58,62 +58,62 @@ class SnowflakeSinkConnectorConfigTest {
     }
 
     @Test
-    void shouldCreateValidConfig(){
+    void shouldCreateValidConfig() {
         SnowflakeSinkConnectorConfig config = new SnowflakeSinkConnectorConfig(createDefaultConfig());
         assertNotNull(config);
     }
 
     @Test
-    void shouldRequireSnowflakeUsername(){
+    void shouldRequireSnowflakeUsername() {
         Properties propsWithoutUsername = createDefaultConfig();
         propsWithoutUsername.remove("snowflake.username");
         ensureThrowsConfigErrorWithMessage(propsWithoutUsername, "Missing required configuration \"snowflake.username\"");
     }
 
     @Test
-    void shouldRequireSnowflakeAccount(){
+    void shouldRequireSnowflakeAccount() {
         Properties propsWithoutAccount = createDefaultConfig();
         propsWithoutAccount.remove("snowflake.account");
         ensureThrowsConfigErrorWithMessage(propsWithoutAccount, "Missing required configuration \"snowflake.account\"");
     }
 
     @Test
-    void shouldRequireSnowflakeWarehouse(){
+    void shouldRequireSnowflakeWarehouse() {
         Properties propsWithoutWarehouse = createDefaultConfig();
         propsWithoutWarehouse.remove("snowflake.warehouse");
         ensureThrowsConfigErrorWithMessage(propsWithoutWarehouse, "Missing required configuration \"snowflake.warehouse\"");
     }
 
     @Test
-    void shouldRequireSnowflakeRole(){
+    void shouldRequireSnowflakeRole() {
         Properties propsWithoutRole = createDefaultConfig();
         propsWithoutRole.remove("snowflake.role");
         ensureThrowsConfigErrorWithMessage(propsWithoutRole, "Missing required configuration \"snowflake.role\"");
     }
 
     @Test
-    void shouldRequireSnowflakeDatabase(){
+    void shouldRequireSnowflakeDatabase() {
         Properties propsWithoutDb = createDefaultConfig();
         propsWithoutDb.remove("snowflake.database");
         ensureThrowsConfigErrorWithMessage(propsWithoutDb, "Missing required configuration \"snowflake.database\"");
     }
 
     @Test
-    void shouldRequireSnowflakeSchema(){
+    void shouldRequireSnowflakeSchema() {
         Properties propsWithoutSchema = createDefaultConfig();
         propsWithoutSchema.remove("snowflake.schema");
         ensureThrowsConfigErrorWithMessage(propsWithoutSchema, "Missing required configuration \"snowflake.schema\"");
     }
 
     @Test
-    void shouldRequireSnowflakeTable(){
+    void shouldRequireSnowflakeTable() {
         Properties propsWithoutTable = createDefaultConfig();
         propsWithoutTable.remove("snowflake.table");
         ensureThrowsConfigErrorWithMessage(propsWithoutTable, "Missing required configuration \"snowflake.table\"");
     }
 
     @Test
-    void ensureDefaultArgumentsAreSet(){
+    void ensureDefaultArgumentsAreSet() {
         Properties props = new Properties();
         props.put("snowflake.username", "testName");
         props.put("snowflake.account", "12345");
@@ -135,16 +135,15 @@ class SnowflakeSinkConnectorConfigTest {
     }
 
 
-
-    void ensureThrowsConfigErrorWithMessage(Properties props, String expectedMessage){
+    void ensureThrowsConfigErrorWithMessage(Properties props, String expectedMessage) {
         ConfigException thrown = assertThrows(
                 ConfigException.class,
-                () ->  new SnowflakeSinkConnectorConfig(props),
+                () -> new SnowflakeSinkConnectorConfig(props),
                 "Expected config without required fields to throw error"
         );
         String message = thrown.getMessage();
-        if(!thrown.getMessage().contains(expectedMessage)){
-            fail("Message \""+expectedMessage+"\" not found in output \""+message+"\"", thrown);
+        if (!thrown.getMessage().contains(expectedMessage)) {
+            fail("Message \"" + expectedMessage + "\" not found in output \"" + message + "\"", thrown);
         }
 
 //        assertTrue(thrown.getMessage().contains(expectedMessage), "Expected error message did not appear.");

@@ -17,9 +17,10 @@ public class SnowflakeSinkConnectorConfig extends AbstractConfig {
     public static final String SNOWFLAKE_SCHEMA = "snowflake.schema";
     public static final String SNOWFLAKE_TABLE = "snowflake.table";
     public static final String SNOWFLAKE_PRIVATE_KEY_FILE = "snowflake.private.key.filename";
-    public static final String SNOWFLAKE_PASSPHRASE = "snowflake.passphrase";
+    public static final String SNOWFLAKE_PRIVATE_KEY_FILE_PASSPHRASE = "snowflake.private.key.passphrase";
     public static final String SNOWFLAKE_MAX_RETRIES = "snowflake.max.retries";
     public static final String SNOWFLAKE_RETRY_BACKOFF_MS = "snowflake.retry.backoffMs";
+
     public static final String BATCH_SIZE = "batch.size";
     public static final String AUTO_CREATE = "auto.create";
     public static final String AUTO_EVOLVE = "auto.evolve";
@@ -98,10 +99,10 @@ public class SnowflakeSinkConnectorConfig extends AbstractConfig {
                     ConfigDef.Width.SHORT,
                     "Snowflake user private-key file"
             )
-            .define(SNOWFLAKE_PASSPHRASE,
+            .define(SNOWFLAKE_PRIVATE_KEY_FILE_PASSPHRASE,
                     ConfigDef.Type.PASSWORD,
                     "",
-                    ConfigDef.Importance.HIGH,
+                    ConfigDef.Importance.MEDIUM,
                     "RSA Private keys may be encrypted locally. Enter the decryption passphrase here.",
                     SNOWFLAKE_CONNECTION_GROUP,
                     9,
@@ -135,7 +136,7 @@ public class SnowflakeSinkConnectorConfig extends AbstractConfig {
                     ConfigDef.Importance.LOW,
                     "Specifies how many records to attempt to batch together for insertion into the destination table, when possible.",
                     SNOWFLAKE_CONNECTION_GROUP,
-                    14,
+                    12,
                     ConfigDef.Width.SHORT,
                     "Batch Size"
             )
@@ -146,7 +147,7 @@ public class SnowflakeSinkConnectorConfig extends AbstractConfig {
                     ConfigDef.Importance.LOW,
                     "Whether to automatically create the destination table based on record schema if it is found to be missing by issuing ``CREATE``.",
                     SNOWFLAKE_CONNECTION_GROUP,
-                    15,
+                    13,
                     ConfigDef.Width.SHORT,
                     "Auto-Create"
             )
@@ -157,7 +158,7 @@ public class SnowflakeSinkConnectorConfig extends AbstractConfig {
                     ConfigDef.Importance.LOW,
                     "Whether to automatically add columns in the table schema when found to be missing relative to the record schema by issuing ``ALTER``.",
                     SNOWFLAKE_CONNECTION_GROUP,
-                    16,
+                    14,
                     ConfigDef.Width.SHORT,
                     "Auto-Evolve"
             );
@@ -174,6 +175,7 @@ public class SnowflakeSinkConnectorConfig extends AbstractConfig {
     public final Password passphrase;
     public final int maxRetries;
     public final long retryBackoffMs;
+
     public final int batchSize;
     public final boolean autoCreate;
     public final boolean autoEvolve;
@@ -190,7 +192,7 @@ public class SnowflakeSinkConnectorConfig extends AbstractConfig {
         this.schema = this.getString(SNOWFLAKE_SCHEMA).toUpperCase();
         this.table = this.getString(SNOWFLAKE_TABLE).toUpperCase();
         this.privateKeyFile = this.getString(SNOWFLAKE_PRIVATE_KEY_FILE);
-        this.passphrase = this.getPassword(SNOWFLAKE_PASSPHRASE);
+        this.passphrase = this.getPassword(SNOWFLAKE_PRIVATE_KEY_FILE_PASSPHRASE);
         this.maxRetries = this.getInt(SNOWFLAKE_MAX_RETRIES);
         this.retryBackoffMs = this.getLong(SNOWFLAKE_RETRY_BACKOFF_MS);
         this.batchSize = this.getInt(BATCH_SIZE);

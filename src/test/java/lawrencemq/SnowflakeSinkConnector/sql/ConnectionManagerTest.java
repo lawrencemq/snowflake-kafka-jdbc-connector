@@ -13,7 +13,7 @@ import java.util.stream.Stream;
 
 import static lawrencemq.SnowflakeSinkConnector.sink.SnowflakeSinkConnectorConfig.SNOWFLAKE_ACCOUNT;
 import static lawrencemq.SnowflakeSinkConnector.sink.SnowflakeSinkConnectorConfig.SNOWFLAKE_DB;
-import static lawrencemq.SnowflakeSinkConnector.sink.SnowflakeSinkConnectorConfig.SNOWFLAKE_PASSPHRASE;
+import static lawrencemq.SnowflakeSinkConnector.sink.SnowflakeSinkConnectorConfig.SNOWFLAKE_PRIVATE_KEY_FILE_PASSPHRASE;
 import static lawrencemq.SnowflakeSinkConnector.sink.SnowflakeSinkConnectorConfig.SNOWFLAKE_RETRY_BACKOFF_MS;
 import static lawrencemq.SnowflakeSinkConnector.sink.SnowflakeSinkConnectorConfig.SNOWFLAKE_ROLE;
 import static lawrencemq.SnowflakeSinkConnector.sink.SnowflakeSinkConnectorConfig.SNOWFLAKE_SCHEMA;
@@ -42,7 +42,7 @@ class ConnectionManagerTest {
     private static SnowflakeSinkConnectorConfig genConfig(Map<?, ?> properties) {
         Map<?, ?> defaultConfigs = Map.of(
                 SNOWFLAKE_USER_NAME, "testUser",
-                SNOWFLAKE_PASSPHRASE, "butterCup123!",
+                SNOWFLAKE_PRIVATE_KEY_FILE_PASSPHRASE, "butterCup123!",
                 SNOWFLAKE_ACCOUNT, "123456789",
                 SNOWFLAKE_WAREHOUSE, "testWH",
                 SNOWFLAKE_ROLE, "defaultRole",
