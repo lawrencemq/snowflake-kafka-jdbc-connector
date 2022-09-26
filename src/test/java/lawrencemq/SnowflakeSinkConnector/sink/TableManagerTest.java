@@ -218,9 +218,9 @@ class TableManagerTest {
                 5
         ));
 
-        String expectedAlterStatement = "ALTER TABLE \"DB1\".\"SCHEMA2\".\"TABLE3\" \n" +
-                "ADD INT16MAYBE NUMBER,\n" +
-                "ADD TRUE_MAYBE BOOLEAN";
+        String expectedAlterStatement = "ALTER TABLE \"DB1\".\"SCHEMA2\".\"TABLE3\" ADD\n" +
+                "INT16MAYBE NUMBER,\n" +
+                "TRUE_MAYBE BOOLEAN";
         verify(statement).executeUpdate(expectedAlterStatement);
         verify(connection).commit();
     }

@@ -34,7 +34,6 @@ class SnowflakeSqlTest {
         );
         String result = SnowflakeSql.buildCreateTableStatement(TABLE, fields);
         assertEquals(result, "CREATE TABLE \"DB1\".\"SCHEMA1\".\"TABLE1\" (\nHELLOWORLD TEXT,\nID NUMBER DEFAULT 22 NOT NULL)");
-        // todo make sure this is a valid command
     }
 
     @Test
@@ -45,8 +44,7 @@ class SnowflakeSqlTest {
         );
 
         String result = SnowflakeSql.buildAlterTableStatement(TABLE, fields);
-        assertEquals(result, "ALTER TABLE \"DB1\".\"SCHEMA1\".\"TABLE1\" \nADD HELLOWORLD TEXT,\nADD ID NUMBER DEFAULT 22 NOT NULL");
-        // TODO MAKE SURE THAT THIS IS A VALID COMMAND.
+        assertEquals(result, "ALTER TABLE \"DB1\".\"SCHEMA1\".\"TABLE1\" ADD\nHELLOWORLD TEXT,\nID NUMBER DEFAULT 22 NOT NULL");
     }
 
 }

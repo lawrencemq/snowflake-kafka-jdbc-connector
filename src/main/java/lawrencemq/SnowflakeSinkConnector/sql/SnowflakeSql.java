@@ -43,14 +43,13 @@ public final class SnowflakeSql {
             if (multipleFields) {
                 queryBuilder.appendNewLine();
             }
-            queryBuilder.append("ADD ")
-                    .appendColumnSpec(field);
+            queryBuilder.appendColumnSpec(field);
         };
 
         return queryBuilder
                 .append("ALTER TABLE ")
                 .append(table)
-                .append(" ")
+                .append(" ADD")
                 .appendList()
                 .withTransformation(transform)
                 .withItems(fields)
