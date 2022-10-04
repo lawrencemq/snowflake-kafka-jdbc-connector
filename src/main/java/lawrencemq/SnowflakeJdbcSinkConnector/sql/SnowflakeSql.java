@@ -18,8 +18,9 @@ public final class SnowflakeSql {
                 .append(table)
                 .append("(")
                 .appendColumns(kafkaFieldToSchemaMap)
-                .append(") SELECT ")
+                .append(") VALUES (")
                 .append(questionMarks)
+                .append(")")
                 .append(System.lineSeparator())
                 .toString();
     }

@@ -19,7 +19,7 @@ class SnowflakeSqlTest {
         fieldsToSchemaMap.put("robot_loc", new Field("robot_loc", 1, SchemaBuilder.map(Schema.STRING_SCHEMA, Schema.STRING_SCHEMA).build()));
 
         String result = SnowflakeSql.buildInsertStatement(TABLE, fieldsToSchemaMap);
-        assertEquals(result, "INSERT INTO \"DB1\".\"SCHEMA1\".\"TABLE1\"(\nROBOT_ID,\nROBOT_LOC) SELECT ?,parse_json(?)\n");
+        assertEquals(result, "INSERT INTO \"DB1\".\"SCHEMA1\".\"TABLE1\"(\nROBOT_ID,\nROBOT_LOC) VALUES (?,parse_json(?))\n");
 
     }
 
