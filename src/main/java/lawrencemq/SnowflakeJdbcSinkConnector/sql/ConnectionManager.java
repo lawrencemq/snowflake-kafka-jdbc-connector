@@ -2,13 +2,12 @@ package lawrencemq.SnowflakeJdbcSinkConnector.sql;
 
 
 import lawrencemq.SnowflakeJdbcSinkConnector.sink.SnowflakeJdbcSinkConnectorConfig;
+import net.snowflake.client.jdbc.*;
 import org.apache.kafka.connect.errors.ConnectException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.SQLException;
+import java.sql.*;
 import java.util.Objects;
 import java.util.Properties;
 import java.util.stream.Collectors;
