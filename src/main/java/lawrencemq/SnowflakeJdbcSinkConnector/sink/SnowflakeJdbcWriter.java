@@ -26,6 +26,11 @@ public class SnowflakeJdbcWriter {
 
 
     void write(Collection<SinkRecord> records) throws SQLException, TableAlterOrCreateException {
+        if(records.size() == 0){
+            return;
+        }
+
+        log.info("Received {} records to push to Snowflake", records.size());
         Connection connection = connectionManager.getConnection();
         RecordBuffer bufferForTable = new RecordBuffer(config, tableManager, connection);
         bufferForTable.addAll(records);

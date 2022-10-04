@@ -22,10 +22,10 @@ public class SnowflakeJdbcSinkConnectorConfig extends AbstractConfig {
     public static final String SNOWFLAKE_MAX_RETRIES = "snowflake.max.retries";
     public static final String SNOWFLAKE_RETRY_BACKOFF_MS = "snowflake.retry.backoffMs";
 
-    public static final String BATCH_SIZE = "batch.size";
-    public static final String AUTO_CREATE = "auto.create";
-    public static final String AUTO_EVOLVE = "auto.evolve";
-    public static final String IGNORE_KEY = "ignore.kafka.message.key";
+    public static final String BATCH_SIZE = "snowflake.batch.size";
+    public static final String AUTO_CREATE = "snowflake.auto.create";
+    public static final String AUTO_EVOLVE = "snowflake.auto.evolve";
+    public static final String IGNORE_KEY = "snowflake.ignore.kafka.message.key";
 
     public static final ConfigDef CONFIG_DEF = new ConfigDef()
             .define(SNOWFLAKE_USER_NAME,
