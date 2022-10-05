@@ -13,6 +13,8 @@ import java.util.LinkedHashMap;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static lawrencemq.SnowflakeJdbcSinkConnector.sink.KafkaMetadata.KAFKA_METADATA_SCHEMA;
+import static lawrencemq.SnowflakeJdbcSinkConnector.sink.KafkaMetadata.getKafkaMetadataFields;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -52,30 +54,31 @@ class KafkaFieldsMetadataTest {
         Set<String> keyFields = getFieldNamesFor(KEY_SCHEMA);
         Set<String> valueFields = getFieldNamesFor(VALUE_SCHEMA);
         LinkedHashMap<String, Field> fieldsToSchemaMap = getMapOf(KEY_SCHEMA, VALUE_SCHEMA);
-        KafkaFieldsMetadata metadata = new KafkaFieldsMetadata(keyFields, valueFields, fieldsToSchemaMap);
+        KafkaFieldsMetadata metadata = new KafkaFieldsMetadata(keyFields, valueFields, getKafkaMetadataFields(), fieldsToSchemaMap);
 
         assertSame(keyFields, metadata.getKeyFields());
         assertSame(valueFields, metadata.getValueFields());
         assertSame(fieldsToSchemaMap, metadata.getAllFields());
-        assertEquals(keyFields.size() + valueFields.size(), metadata.getAllFieldNames().size());
+        assertEquals(keyFields.size() + valueFields.size() + getKafkaMetadataFields().size(), metadata.getAllFieldNames().size());
     }
 
 
     @Test
     void extract() {
         TopicSchemas topicSchemas = new TopicSchemas(KEY_SCHEMA, VALUE_SCHEMA);
-        KafkaFieldsMetadata metadata = KafkaFieldsMetadata.from(topicSchemas);
+        KafkaFieldsMetadata metadata = KafkaFieldsMetadata.from(topicSchemas, true);
 
-        assertEquals(metadata.getAllFields().size(), 4);
-        assertEquals(new HashSet<>(metadata.getAllFieldNames()), getMapOf(KEY_SCHEMA, VALUE_SCHEMA).keySet());
+        assertEquals(metadata.getAllFields().size(), 8);
+        assertEquals(new HashSet<>(metadata.getAllFieldNames()), getMapOf(KEY_SCHEMA, VALUE_SCHEMA, KAFKA_METADATA_SCHEMA).keySet());
         assertEquals(metadata.getKeyFields(), getFieldNamesFor(KEY_SCHEMA));
         assertEquals(metadata.getValueFields(), getFieldNamesFor(VALUE_SCHEMA));
+        assertEquals(metadata.getKafkaMetadataFields(), getKafkaMetadataFields());
     }
 
     @Test
     void extractWithNullKey() {
         TopicSchemas topicSchemas = new TopicSchemas(null, VALUE_SCHEMA);
-        KafkaFieldsMetadata metadata = KafkaFieldsMetadata.from(topicSchemas);
+        KafkaFieldsMetadata metadata = KafkaFieldsMetadata.from(topicSchemas, false);
 
         assertEquals(metadata.getAllFields().size(), 3);
         assertEquals(new HashSet<>(metadata.getAllFieldNames()), getMapOf(VALUE_SCHEMA).keySet());
@@ -83,12 +86,24 @@ class KafkaFieldsMetadataTest {
         assertEquals(metadata.getValueFields(), getFieldNamesFor(VALUE_SCHEMA));
     }
 
+    @Test
+    void extractWithNullKeyIncludeKafkaMetadata(){
+        TopicSchemas topicSchemas = new TopicSchemas(null, VALUE_SCHEMA);
+        KafkaFieldsMetadata metadata = KafkaFieldsMetadata.from(topicSchemas, true);
+
+        assertEquals(metadata.getAllFields().size(), 7);
+        assertEquals(new HashSet<>(metadata.getAllFieldNames()), getMapOf(VALUE_SCHEMA, KAFKA_METADATA_SCHEMA).keySet());
+        assertEquals(metadata.getKeyFields(), Set.of());
+        assertEquals(metadata.getValueFields(), getFieldNamesFor(VALUE_SCHEMA));
+        assertEquals(metadata.getKafkaMetadataFields(), getKafkaMetadataFields());
+    }
+
 
     @Test
     void extractWithPrimitiveKey() {
         TopicSchemas topicSchemas = new TopicSchemas(SchemaBuilder.STRING_SCHEMA, VALUE_SCHEMA);
         assertThrows(RecordKeyTypeException.class,
-                () -> KafkaFieldsMetadata.from(topicSchemas),
+                () -> KafkaFieldsMetadata.from(topicSchemas, false),
                 "ensures key is null or struct");
     }
 
@@ -96,7 +111,7 @@ class KafkaFieldsMetadataTest {
     void extractErrorsWithValueNonStruct() {
         TopicSchemas topicSchemas = new TopicSchemas(KEY_SCHEMA, Schema.STRING_SCHEMA);
         assertThrows(RecordValueTypeException.class,
-                () -> KafkaFieldsMetadata.from(topicSchemas),
+                () -> KafkaFieldsMetadata.from(topicSchemas, false),
                 "Ensures value schema is a struct.");
     }
 
@@ -104,7 +119,7 @@ class KafkaFieldsMetadataTest {
     void extractErrorsWithValueStructNull() {
         TopicSchemas topicSchemas = new TopicSchemas(KEY_SCHEMA, null);
         assertThrows(RecordValueTypeException.class,
-                () -> KafkaFieldsMetadata.from(topicSchemas),
+                () -> KafkaFieldsMetadata.from(topicSchemas, false),
                 "Ensures value schema is not null.");
     }
 
@@ -114,7 +129,7 @@ class KafkaFieldsMetadataTest {
         TopicSchemas topicSchemas = new TopicSchemas(emptyStructSchema, emptyStructSchema);
 
         assertThrows(InvalidColumnsError.class,
-                () -> KafkaFieldsMetadata.from(topicSchemas),
+                () -> KafkaFieldsMetadata.from(topicSchemas, false),
                 "Ensures key and value has at least one field");
     }
 
@@ -132,7 +147,7 @@ class KafkaFieldsMetadataTest {
                         .build());
 
         assertThrows(InvalidColumnsError.class,
-                () -> KafkaFieldsMetadata.from(topicSchemas),
+                () -> KafkaFieldsMetadata.from(topicSchemas, false),
                 "Ensures fields between key and value do not overlap");
     }
 
@@ -142,7 +157,7 @@ class KafkaFieldsMetadataTest {
         Set<String> keyFields = getFieldNamesFor(KEY_SCHEMA);
         Set<String> valueFields = getFieldNamesFor(VALUE_SCHEMA);
         LinkedHashMap<String, Field> fieldsToSchemaMap = getMapOf(KEY_SCHEMA, VALUE_SCHEMA);
-        KafkaFieldsMetadata metadata = new KafkaFieldsMetadata(keyFields, valueFields, fieldsToSchemaMap);
+        KafkaFieldsMetadata metadata = new KafkaFieldsMetadata(keyFields, valueFields, getKafkaMetadataFields(), fieldsToSchemaMap);
         assertEquals(metadata.toString(), "KafkaFieldsMetadata{keyFields=[id],valueFields=[else, entirely, something]}");
     }
 }

@@ -4,24 +4,23 @@ package lawrencemq.SnowflakeJdbcSinkConnector.sink;
 import lawrencemq.SnowflakeJdbcSinkConnector.sink.exceptions.*;
 import org.apache.kafka.connect.data.*;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
+import java.util.stream.*;
+
+import static lawrencemq.SnowflakeJdbcSinkConnector.sink.KafkaMetadata.KAFKA_METADATA_SCHEMA;
 
 
 public class KafkaFieldsMetadata {
 
     private final Set<String> keyFields;
     private final Set<String> valueFields;
+    private final List<KafkaMetadata.MetadataField> kafkaMetadataFields;
     private final LinkedHashMap<String, Field> allFields;
 
-    public KafkaFieldsMetadata(Set<String> keyFields, Set<String> valueFields, LinkedHashMap<String, Field> allFields) {
+    public KafkaFieldsMetadata(Set<String> keyFields, Set<String> valueFields, List<KafkaMetadata.MetadataField> kafkaMetadataFields, LinkedHashMap<String, Field> allFields) {
         this.keyFields = keyFields;
         this.valueFields = valueFields;
+        this.kafkaMetadataFields = kafkaMetadataFields;
         this.allFields = allFields;
     }
 
@@ -33,6 +32,10 @@ public class KafkaFieldsMetadata {
         return valueFields;
     }
 
+    public List<KafkaMetadata.MetadataField> getKafkaMetadataFields() {
+        return kafkaMetadataFields;
+    }
+
     public LinkedHashMap<String, Field> getAllFields() {
         return allFields;
     }
@@ -40,11 +43,12 @@ public class KafkaFieldsMetadata {
     public List<String> getAllFieldNames() {
         List<String> allFields = new ArrayList<>(keyFields);
         allFields.addAll(valueFields);
+        allFields.addAll(kafkaMetadataFields.stream().map(KafkaMetadata.MetadataField::toString).collect(Collectors.toList()));
         return allFields;
     }
 
 
-    public static KafkaFieldsMetadata from(TopicSchemas topicSchemas) {
+    public static KafkaFieldsMetadata from(TopicSchemas topicSchemas, boolean includeKafkaMetadata) {
         Schema keySchema = topicSchemas.keySchema();
         Schema valueSchema = topicSchemas.valueSchema();
 
@@ -63,6 +67,7 @@ public class KafkaFieldsMetadata {
 
         Map<String, Field> keyFieldToSchemaMap = extractFieldsFromSchema(keySchema);
         Map<String, Field> valueFieldToSchemaMap = extractFieldsFromSchema(valueSchema);
+        Map<String, Field> kafkaMetadataFieldToSchemaMap = includeKafkaMetadata ? extractFieldsFromSchema(KAFKA_METADATA_SCHEMA) : Map.of();
 
         if (keyFieldToSchemaMap.isEmpty() && valueFieldToSchemaMap.isEmpty()) {
             throw new InvalidColumnsError("Key and value schemas were found to be empty.");
@@ -77,8 +82,14 @@ public class KafkaFieldsMetadata {
         LinkedHashMap<String, Field> allFieldsOrdered = new LinkedHashMap<>();
         allFieldsOrdered.putAll(keyFieldToSchemaMap);
         allFieldsOrdered.putAll(valueFieldToSchemaMap);
+        allFieldsOrdered.putAll(kafkaMetadataFieldToSchemaMap);
 
-        return new KafkaFieldsMetadata(keyFieldToSchemaMap.keySet(), valueFieldToSchemaMap.keySet(), allFieldsOrdered);
+        return new KafkaFieldsMetadata(
+                keyFieldToSchemaMap.keySet(),
+                valueFieldToSchemaMap.keySet(),
+                includeKafkaMetadata ? KafkaMetadata.getKafkaMetadataFields() : List.of(),
+                allFieldsOrdered
+        );
     }
 
 

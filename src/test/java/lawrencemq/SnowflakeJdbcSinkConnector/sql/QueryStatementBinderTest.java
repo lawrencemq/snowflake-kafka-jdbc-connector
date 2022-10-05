@@ -2,6 +2,7 @@ package lawrencemq.SnowflakeJdbcSinkConnector.sql;
 
 import lawrencemq.SnowflakeJdbcSinkConnector.sink.KafkaFieldsMetadata;
 import lawrencemq.SnowflakeJdbcSinkConnector.sink.TopicSchemas;
+import org.apache.kafka.common.record.*;
 import org.apache.kafka.connect.data.*;
 import org.apache.kafka.connect.data.Date;
 import org.apache.kafka.connect.sink.SinkRecord;
@@ -13,6 +14,7 @@ import java.sql.SQLException;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static lawrencemq.SnowflakeJdbcSinkConnector.sink.KafkaMetadata.getKafkaMetadataFields;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.mock;
@@ -101,26 +103,24 @@ class QueryStatementBinderTest {
         fieldToSchemaMap.put(VALUE_FIELD.name(), VALUE_FIELD);
 
         TopicSchemas topicSchemas = new TopicSchemas(keySchema, VALUE_SCHEMA);
-        KafkaFieldsMetadata kafkaFieldsMetadata = new KafkaFieldsMetadata(Set.of(keyFieldName), Set.of(VALUE_FIELD.name()), fieldToSchemaMap);
+        KafkaFieldsMetadata kafkaFieldsMetadata = new KafkaFieldsMetadata(Set.of(keyFieldName), Set.of(VALUE_FIELD.name()), getKafkaMetadataFields(), fieldToSchemaMap);
         SinkRecord record = new SinkRecord(topic, partition, keySchema, 42, VALUE_SCHEMA, VALUE, kafkaOffset);
         PreparedStatement statement = mock(PreparedStatement.class);
 
         QueryStatementBinder binder = new QueryStatementBinder(statement, topicSchemas, kafkaFieldsMetadata);
-        assertThrows(AssertionError.class, () -> binder.bind(record), "Should error if key is a primitive type");
+        assertThrows(AssertionError.class, () -> binder.bind(record, true), "Should error if key is a primitive type");
     }
 
     @Test
     void bindNullKey() throws SQLException {
         TopicSchemas topicSchemas = new TopicSchemas(null, VALUE_SCHEMA);
-        KafkaFieldsMetadata kafkaFieldsMetadata = new KafkaFieldsMetadata(Set.of(), valueFields, valueMap);
+        KafkaFieldsMetadata kafkaFieldsMetadata = new KafkaFieldsMetadata(Set.of(), valueFields, getKafkaMetadataFields(), valueMap);
         SinkRecord record = new SinkRecord(topic, partition, null, null, VALUE_SCHEMA, VALUE, kafkaOffset);
         PreparedStatement statement = mock(PreparedStatement.class);
 
         QueryStatementBinder binder = new QueryStatementBinder(statement, topicSchemas, kafkaFieldsMetadata);
-        binder.bind(record);
+        binder.bind(record, true);
         verify(statement).addBatch();
-
-        // todo verify more?
     }
 
     @Test
@@ -139,16 +139,15 @@ class QueryStatementBinderTest {
         LinkedHashMap<String, Field> allFieldsMap = unionMaps(valueMap, keyMap);
 
         TopicSchemas topicSchemas = new TopicSchemas(keySchema, VALUE_SCHEMA);
-        KafkaFieldsMetadata kafkaFieldsMetadata = new KafkaFieldsMetadata(keyFields, valueFields, allFieldsMap);
+        KafkaFieldsMetadata kafkaFieldsMetadata = new KafkaFieldsMetadata(keyFields, valueFields, getKafkaMetadataFields(), allFieldsMap);
         SinkRecord record = new SinkRecord(topic, partition, keySchema, keyStruct, VALUE_SCHEMA, VALUE, kafkaOffset);
         PreparedStatement statement = mock(PreparedStatement.class);
 
         QueryStatementBinder binder = new QueryStatementBinder(statement, topicSchemas, kafkaFieldsMetadata);
-        binder.bind(record);
+        binder.bind(record, true);
         verify(statement).addBatch();
-
-        // todo verify more?
-
+        verify(statement).setString(eq(1), eq("Phillip"));
+        verify(statement).setString(eq(2), eq("Fry"));
     }
 
     @Test
@@ -160,12 +159,12 @@ class QueryStatementBinderTest {
                 .put("str", null);
 
         TopicSchemas topicSchemas = new TopicSchemas(null, valueSchema);
-        KafkaFieldsMetadata kafkaFieldsMetadata = new KafkaFieldsMetadata(Set.of(), schemaToFieldsSet(valueSchema), schemaToFieldsMap(valueSchema));
+        KafkaFieldsMetadata kafkaFieldsMetadata = new KafkaFieldsMetadata(Set.of(), schemaToFieldsSet(valueSchema), getKafkaMetadataFields(), schemaToFieldsMap(valueSchema));
         SinkRecord record = new SinkRecord(topic, partition, null, null, valueSchema, value, kafkaOffset);
         PreparedStatement statement = mock(PreparedStatement.class);
 
         QueryStatementBinder binder = new QueryStatementBinder(statement, topicSchemas, kafkaFieldsMetadata);
-        binder.bind(record);
+        binder.bind(record, true);
         verify(statement).setObject(eq(1), eq(null));
         verify(statement).addBatch();
     }
@@ -173,12 +172,12 @@ class QueryStatementBinderTest {
     @Test
     void bindPrimitiveValue() throws SQLException {
         TopicSchemas topicSchemas = new TopicSchemas(null, VALUE_SCHEMA);
-        KafkaFieldsMetadata kafkaFieldsMetadata = new KafkaFieldsMetadata(Set.of(), schemaToFieldsSet(VALUE_SCHEMA), schemaToFieldsMap(VALUE_SCHEMA));
+        KafkaFieldsMetadata kafkaFieldsMetadata = new KafkaFieldsMetadata(Set.of(), schemaToFieldsSet(VALUE_SCHEMA), getKafkaMetadataFields(), schemaToFieldsMap(VALUE_SCHEMA));
         SinkRecord record = new SinkRecord(topic, partition, null, null, VALUE_SCHEMA, VALUE, kafkaOffset);
         PreparedStatement statement = mock(PreparedStatement.class);
 
         QueryStatementBinder binder = new QueryStatementBinder(statement, topicSchemas, kafkaFieldsMetadata);
-        binder.bind(record);
+        binder.bind(record, true);
         verify(statement).setString(eq(1), eq("BenderIsGreat"));
         verify(statement).setBytes(eq(2), eq(new byte[]{-64, 64}));
         verify(statement).setByte(eq(3), eq((byte) 16));
@@ -198,16 +197,34 @@ class QueryStatementBinderTest {
     @Test
     void bindComplexValue() throws SQLException {
         TopicSchemas topicSchemas = new TopicSchemas(null, VALUE_SCHEMA);
-        KafkaFieldsMetadata kafkaFieldsMetadata = new KafkaFieldsMetadata(Set.of(), schemaToFieldsSet(VALUE_SCHEMA), schemaToFieldsMap(VALUE_SCHEMA));
+        KafkaFieldsMetadata kafkaFieldsMetadata = new KafkaFieldsMetadata(Set.of(), schemaToFieldsSet(VALUE_SCHEMA), getKafkaMetadataFields(), schemaToFieldsMap(VALUE_SCHEMA));
         SinkRecord record = new SinkRecord(topic, partition, null, null, VALUE_SCHEMA, VALUE, kafkaOffset);
         PreparedStatement statement = mock(PreparedStatement.class);
 
         QueryStatementBinder binder = new QueryStatementBinder(statement, topicSchemas, kafkaFieldsMetadata);
-        binder.bind(record);
+        binder.bind(record, true);
         verify(statement).setBigDecimal(eq(13), eq(new BigDecimal("5.2")));
         verify(statement).setDate(eq(14), eq(new java.sql.Date((DATETIME).getTime())), any(Calendar.class));
         verify(statement).setTime(eq(15), eq(new java.sql.Time((DATETIME).getTime())), any(Calendar.class));
         verify(statement).setTimestamp(eq(16), eq(new java.sql.Timestamp((DATETIME).getTime())), any(Calendar.class));
+        verify(statement).setObject(eq(17), eq(null));
         verify(statement).addBatch();
+    }
+
+    @Test
+    void bindKafkaMetadata() throws SQLException {
+        long timestamp = 123457890L;
+        TopicSchemas topicSchemas = new TopicSchemas(null, VALUE_SCHEMA);
+        KafkaFieldsMetadata kafkaFieldsMetadata = new KafkaFieldsMetadata(Set.of(), schemaToFieldsSet(VALUE_SCHEMA), getKafkaMetadataFields(), schemaToFieldsMap(VALUE_SCHEMA));
+        SinkRecord record = new SinkRecord(topic, partition, null, null, VALUE_SCHEMA, VALUE, kafkaOffset, timestamp, TimestampType.CREATE_TIME);
+        PreparedStatement statement = mock(PreparedStatement.class);
+
+        QueryStatementBinder binder = new QueryStatementBinder(statement, topicSchemas, kafkaFieldsMetadata);
+        binder.bind(record, true);
+        verify(statement).addBatch();
+        verify(statement).setString(eq(18), eq(topic));
+        verify(statement).setInt(eq(19), eq(partition));
+        verify(statement).setLong(eq(20), eq(kafkaOffset));
+        verify(statement).setLong(eq(21), eq(timestamp));
     }
 }

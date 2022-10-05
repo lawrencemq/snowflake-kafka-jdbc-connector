@@ -110,7 +110,11 @@ class RecordBufferTest {
                 "ID,\n" +
                 "FIRSTNAME,\n" +
                 "LASTNAME,\n" +
-                "AGESTR) SELECT ?,?,?,?\n";
+                "AGESTR,\n" +
+                "_KAFKA_TOPIC,\n" +
+                "_KAFKA_PARTITION,\n" +
+                "_KAFKA_OFFSET,\n" +
+                "_KAFKA_TIMESTAMP) VALUES (?,?,?,?,?,?,?,?)\n";
         verify(connection).prepareStatement(eq(expectedSQL));
 
         List<SinkRecord> flushedRecords2 = buffer.addAll(messageGroups.get(1));// Adding more messages, ensuring that records buffer
@@ -146,7 +150,10 @@ class RecordBufferTest {
                 "FIRSTNAME,\n" +
                 "LASTNAME,\n" +
                 "AGESTR,\n" +
-                "ADDRESS) SELECT ?,?,?,?,?\n";
+                "_KAFKA_TOPIC,\n" +
+                "_KAFKA_PARTITION,\n" +
+                "_KAFKA_OFFSET,\n" +
+                "_KAFKA_TIMESTAMP) VALUES (?,?,?,?,?,?,?,?)\n";
         verify(connection).prepareStatement(eq(expectedInsertSQL));
     }
 

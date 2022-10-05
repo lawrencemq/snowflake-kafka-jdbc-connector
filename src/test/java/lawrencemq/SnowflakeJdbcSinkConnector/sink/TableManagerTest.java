@@ -12,6 +12,7 @@ import org.junit.jupiter.api.Test;
 import java.sql.*;
 import java.util.*;
 
+import static lawrencemq.SnowflakeJdbcSinkConnector.sink.KafkaMetadata.getKafkaMetadataFields;
 import static lawrencemq.SnowflakeJdbcSinkConnector.sink.SnowflakeJdbcSinkConnectorConfig.*;
 import static lawrencemq.SnowflakeJdbcSinkConnector.TestData.TABLE;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -71,6 +72,7 @@ class TableManagerTest {
                 () -> tableManager.createOrAmendTable(connection,
                         new KafkaFieldsMetadata(getFieldNamesFor(KEY_SCHEMA),
                                 getFieldNamesFor(VALUE_SCHEMA),
+                                getKafkaMetadataFields(),
                                 getMapOf(KEY_SCHEMA, VALUE_SCHEMA)
                         )
                 )
@@ -95,6 +97,7 @@ class TableManagerTest {
         tableManager.createTableIfNecessary(connection,
                 new KafkaFieldsMetadata(getFieldNamesFor(KEY_SCHEMA),
                         getFieldNamesFor(VALUE_SCHEMA),
+                        getKafkaMetadataFields(),
                         getMapOf(KEY_SCHEMA, VALUE_SCHEMA)
                 )
         );
@@ -125,6 +128,7 @@ class TableManagerTest {
                 () -> tableManager.amendIfNecessary(connection,
                         new KafkaFieldsMetadata(getFieldNamesFor(KEY_SCHEMA),
                                 getFieldNamesFor(VALUE_SCHEMA),
+                                getKafkaMetadataFields(),
                                 getMapOf(KEY_SCHEMA, VALUE_SCHEMA)
                         ),
                         5
@@ -154,6 +158,7 @@ class TableManagerTest {
                 tableManager.amendIfNecessary(connection,
                         new KafkaFieldsMetadata(getFieldNamesFor(KEY_SCHEMA),
                                 getFieldNamesFor(VALUE_SCHEMA),
+                                getKafkaMetadataFields(),
                                 getMapOf(KEY_SCHEMA, VALUE_SCHEMA)
                         ),
                         5
@@ -179,6 +184,7 @@ class TableManagerTest {
                 () -> tableManager.amendIfNecessary(connection,
                         new KafkaFieldsMetadata(getFieldNamesFor(KEY_SCHEMA),
                                 getFieldNamesFor(VALUE_SCHEMA),
+                                getKafkaMetadataFields(),
                                 getMapOf(KEY_SCHEMA, VALUE_SCHEMA)
                         ),
                         5
@@ -213,12 +219,13 @@ class TableManagerTest {
         assertTrue(tableManager.amendIfNecessary(connection,
                 new KafkaFieldsMetadata(getFieldNamesFor(KEY_SCHEMA),
                         getFieldNamesFor(VALUE_SCHEMA),
+                        getKafkaMetadataFields(),
                         getMapOf(KEY_SCHEMA, VALUE_SCHEMA)
                 ),
                 5
         ));
 
-        String expectedAlterStatement = "ALTER TABLE \"DB1\".\"SCHEMA2\".\"TABLE3\" ADD\n" +
+        String expectedAlterStatement = "ALTER TABLE \"DB1\".\"SCHEMA2\".\"TABLE3\" ADD \n" +
                 "INT16MAYBE NUMBER,\n" +
                 "TRUE_MAYBE BOOLEAN";
         verify(statement).executeUpdate(expectedAlterStatement);

@@ -49,10 +49,11 @@ class SnowflakeJdbcSinkConnectorConfigTest {
                 "snowflake.private.key.passphrase",
                 "snowflake.max.retries",
                 "snowflake.retry.backoffMs",
-                "batch.size",
-                "auto.create",
-                "auto.evolve",
-                "ignore.kafka.message.key"
+                "snowflake.batch.size",
+                "snowflake.auto.create",
+                "snowflake.auto.evolve",
+                "snowflake.ignore.kafka.message.key",
+                "snowflake.ignore.kafka.metadata"
         );
 
         assertEquals(allConfigNames, expectedConfigNames);

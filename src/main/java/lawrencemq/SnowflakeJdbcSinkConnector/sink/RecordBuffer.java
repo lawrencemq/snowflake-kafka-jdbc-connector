@@ -4,7 +4,6 @@ import lawrencemq.SnowflakeJdbcSinkConnector.sink.exceptions.TableAlterOrCreateE
 import lawrencemq.SnowflakeJdbcSinkConnector.sink.exceptions.TableDoesNotExistException;
 import lawrencemq.SnowflakeJdbcSinkConnector.sql.QueryStatementBinder;
 import lawrencemq.SnowflakeJdbcSinkConnector.sql.SnowflakeSql;
-import net.snowflake.client.jdbc.*;
 import org.apache.kafka.connect.data.Schema;
 import org.apache.kafka.connect.sink.SinkRecord;
 import org.slf4j.Logger;
@@ -82,7 +81,7 @@ public class RecordBuffer {
                     record.keySchema(),
                     record.valueSchema()
             );
-            KafkaFieldsMetadata kafkaFieldsMetadata = KafkaFieldsMetadata.from(topicSchemas);
+            KafkaFieldsMetadata kafkaFieldsMetadata = KafkaFieldsMetadata.from(topicSchemas, !config.ignoreKafkaMetadata);
             tableManager.createOrAmendTable(
                     connection,
                     kafkaFieldsMetadata
@@ -113,7 +112,7 @@ public class RecordBuffer {
         }
         log.info("Flushing {} buffered records", records.size());
         for (SinkRecord record : records) {
-            insertStatementBinder.bind(record);
+            insertStatementBinder.bind(record, !config.ignoreKafkaMetadata);
         }
         insertAndCommit();
 

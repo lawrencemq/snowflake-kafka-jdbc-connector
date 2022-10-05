@@ -26,6 +26,7 @@ public class SnowflakeJdbcSinkConnectorConfig extends AbstractConfig {
     public static final String AUTO_CREATE = "snowflake.auto.create";
     public static final String AUTO_EVOLVE = "snowflake.auto.evolve";
     public static final String IGNORE_KEY = "snowflake.ignore.kafka.message.key";
+    public static final String IGNORE_KAFKA_METADATA = "snowflake.ignore.kafka.metadata";
 
     public static final ConfigDef CONFIG_DEF = new ConfigDef()
             .define(SNOWFLAKE_USER_NAME,
@@ -184,6 +185,17 @@ public class SnowflakeJdbcSinkConnectorConfig extends AbstractConfig {
                     16,
                     ConfigDef.Width.SHORT,
                     "Ignore Kafka Message Keys"
+            )
+            .define(
+                    IGNORE_KAFKA_METADATA,
+                    ConfigDef.Type.BOOLEAN,
+                    false,
+                    ConfigDef.Importance.LOW,
+                    "Whether ignore Kafka metadata: topic, partition, offset, timestamp.",
+                    SNOWFLAKE_CONNECTION_GROUP,
+                    17,
+                    ConfigDef.Width.SHORT,
+                    "Ignore Kafka Metadata"
             );
 
 
@@ -204,6 +216,7 @@ public class SnowflakeJdbcSinkConnectorConfig extends AbstractConfig {
     public final boolean autoCreate;
     public final boolean autoEvolve;
     public final boolean ignoreKey;
+    public final boolean ignoreKafkaMetadata;
 
 
     public SnowflakeJdbcSinkConnectorConfig(Map<?, ?> props) {
@@ -225,6 +238,7 @@ public class SnowflakeJdbcSinkConnectorConfig extends AbstractConfig {
         this.autoCreate = this.getBoolean(AUTO_CREATE);
         this.autoEvolve = this.getBoolean(AUTO_EVOLVE);
         this.ignoreKey = this.getBoolean(IGNORE_KEY);
+        this.ignoreKafkaMetadata = this.getBoolean(IGNORE_KAFKA_METADATA);
     }
 
     protected static ConfigDef configDef() {
