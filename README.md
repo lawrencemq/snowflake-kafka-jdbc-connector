@@ -58,10 +58,10 @@ At the time of this writing, Confluent 7.2.2 is used.
 
 Follow the [quickstart](https://docs.confluent.io/platform/current/platform-quickstart.html#prerequisites) instructions for Confluent to set up a cluster locally - use the `tar archive` over the Docker. 
 
-To build a development snapshot, use gradle to build a shadow-jar. Copy that JAR into the Confluence binaries and restart Connect to make it available through the UI. 
+To build a development snapshot, use Maven a JAR. Copy that JAR into the Confluence binaries and restart Connect to make it available through the UI. 
 
-- `./gradlew shadowJar`
-- `cp ./build/libs/snowflake-kafka-jdbc-connector-0.1.0-all.jar $CONFLUENT_HOME/share/java/snowflake-kafka-jdbc-connector`
+- `mvn clean compile assembly:single`
+- `cp ./target/snowflake-kafka-jdbc-connector-0.1.0.jar $CONFLUENT_HOME/share/java/snowflake-kafka-jdbc-connector`
 - `confluent local services connect stop && confluent local services connect start`
 
 # Known Limitations
