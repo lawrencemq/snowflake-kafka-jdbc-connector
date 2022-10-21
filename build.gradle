@@ -18,7 +18,6 @@ repositories {
 }
 
 dependencies {
-    implementation "org.apache.kafka:kafka-clients:3.2.1"
     implementation "org.apache.kafka:connect-api:3.2.1"
     implementation 'net.snowflake:snowflake-jdbc:3.13.22'
     implementation 'org.slf4j:slf4j-api:1.7.36'
