@@ -24,4 +24,4 @@ jobs:
         architecture: x64
         cache: maven
     - name: Run the Maven verify phase
-      run: mvn --batch-mode --update-snapshots verify
+      run: mvn --batch-mode --update-snapshots verify -Dgpg.skip
