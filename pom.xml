@@ -5,17 +5,17 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>lawrencemq</groupId>
+    <groupId>git.lawrencemq</groupId>
     <artifactId>snowflake-kafka-jdbc-connector</artifactId>
     <version>0.1.0</version>
     <packaging>jar</packaging>
-    <name>Snowflake Kafka JDBC Connector</name>
-    <description>Snowflake Kafka JDBC Connect Sink Connector</description>
+    <name>snowflake-kafka-jdbc</name>
+    <description>Snowflake Kafka JDBC Sink Connector</description>
     <url>https://github.com/lawrencemq/snowflake-kafka-jdbc-connector</url>
 
     <developers>
         <developer>
-            <name>@lawrencemq</name>
+            <name>Lawrence Weikum</name>
             <organizationUrl>https://github.com/lawrencemq/snowflake-kafka-jdbc-connector</organizationUrl>
         </developer>
     </developers>
@@ -64,7 +64,6 @@
             </snapshots>
         </repository>
     </repositories>
-
     <build>
         <plugins>
             <plugin>
@@ -72,45 +71,72 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>2.22.0</version>
             </plugin>
-
             <plugin>
-                <artifactId>maven-assembly-plugin</artifactId>
-                <version>3.1.1</version>
+                <groupId>io.confluent</groupId>
+                <version>0.12.0</version>
+                <artifactId>kafka-connect-maven-plugin</artifactId>
                 <executions>
                     <execution>
+                        <goals>
+                            <goal>kafka-connect</goal>
+                        </goals>
+                        <configuration>
+                            <title>Snowflake Kafka JDBC Sink Connector</title>
+                            <documentationUrl>https://docs.confluent.io/kafka-connect-jdbc/current/</documentationUrl>
+                            <description>
+                                A JDBC sink connector that allows direct writes to Snowflake in a flattened schema with the use of the Snowflake JDBC driver.
+
+                                Connector allows for automatic table creation, automatic schema evolution, and can attach Kafka metadata to messages.
+
+                                Works with messages written using Avro.
+                            </description>
+
+                            <supportProviderName>lawrencemq</supportProviderName>
+                            <supportSummary>Confluent supports the JDBC sink and source connectors alongside community members as part of its Confluent Platform offering.</supportSummary>
+                            <supportUrl>https://github.com/lawrencemq/snowflake-kafka-jdbc-connector</supportUrl>
+
+                            <ownerUsername>lawrencemq</ownerUsername>
+                            <ownerType>user</ownerType>
+                            <ownerName>Lawrence Weikum</ownerName>
+                            <ownerUrl>https://github.com/lawrencemq/snowflake-kafka-jdbc-connector</ownerUrl>
+
+                            <componentTypes>
+                                <componentType>sink</componentType>
+                            </componentTypes>
+
+                            <tags>
+                                <tag>jdbc</tag>
+                                <tag>database</tag>
+                                <tag>dbms</tag>
+                                <tag>sql</tag>
+                                <tag>snowflake</tag>
+                                <tag>warehouse</tag>
+                            </tags>
+
+                            <deliveryGuarantee>
+                                <deliveryGuarantee>atLeastOnce</deliveryGuarantee>
+                            </deliveryGuarantee>
+
+                            <confluentControlCenterIntegration>true</confluentControlCenterIntegration>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-gpg-plugin</artifactId>
+                <version>1.6</version>
+                <executions>
+                    <execution>
+                        <id>sign-artifacts</id>
                         <phase>package</phase>
                         <goals>
-                            <goal>single</goal>
+                            <goal>sign</goal>
                         </goals>
                     </execution>
                 </executions>
-                <configuration>
-                    <archive>
-                        <manifest>
-                            <addClasspath>true</addClasspath>
-                        </manifest>
-                    </archive>
-                    <descriptorRefs>
-                        <descriptorRef>jar-with-dependencies</descriptorRef>
-                    </descriptorRefs>
-                    <finalName>${project.artifactId}-${project.version}
-                    </finalName>
-                    <appendAssemblyId>false</appendAssemblyId>
-                </configuration>
             </plugin>
         </plugins>
-
-        <!-- disable default maven deploy plugin since we are using gpg:sign-and-deploy-file -->
-        <pluginManagement>
-            <plugins>
-                <plugin>
-                    <artifactId>maven-deploy-plugin</artifactId>
-                    <configuration>
-                        <skip>true</skip>
-                    </configuration>
-                </plugin>
-            </plugins>
-        </pluginManagement>
     </build>
     <dependencies>
 
