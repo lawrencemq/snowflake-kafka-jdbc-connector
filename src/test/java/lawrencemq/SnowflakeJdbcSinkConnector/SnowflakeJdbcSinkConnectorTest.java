@@ -55,6 +55,6 @@ class SnowflakeJdbcSinkConnectorTest {
 
     @Test
     void version(){
-        assertEquals(connector.version(), "0.1.0");
+        assertEquals(connector.version(), "0.2.0-SNAPSHOT");
     }
 }
