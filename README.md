@@ -61,7 +61,7 @@ Follow the [quickstart](https://docs.confluent.io/platform/current/platform-quic
 To build a development snapshot, use Maven a JAR. Copy that JAR into the Confluence binaries and restart Connect to make it available through the UI. 
 
 - `mvn clean compile assembly:single`
-- `cp ./target/snowflake-kafka-jdbc-connector-0.1.0.jar $CONFLUENT_HOME/share/java/snowflake-kafka-jdbc-connector`
+- `cp ./target/snowflake-kafka-jdbc-connector-0.2.0-SNAPSHOT.jar $CONFLUENT_HOME/share/java/snowflake-kafka-jdbc-connector`
 - `confluent local services connect stop && confluent local services connect start`
 
 # Known Limitations
